@@ -1,5 +1,6 @@
-path_to_data: C:/Users/a-mogabr/Documents/DialectDetection/dataset_dummy
-checkpointing_path: C:/Users/a-mogabr/Documents/DialectDetection/checkpoints
+path_to_data: /Users/mohamedgabr/Documents/NeuralDialectDetector/NeuralDialectDetector/dataset_dummy
+checkpointing_path: /Users/mohamedgabr/Documents/NeuralDialectDetector/NeuralDialectDetector/checkpoints
+model_name_path: "bashar-talafha/multi-dialect-bert-base-arabic"
 batch_size: 8
 classif_dropout_rate: 0.1
 initial_learning_rate: 0.00001
@@ -12,3 +13,4 @@ checkpointing_on: false
 checkpointing_freq: 500 # Needs the argument above to be true
 checkpoint_on_improvement: false
 improvement_check_freq: 100 # Needs the argument above to be true
+seed_list: [1033, 611, 520, 300, 760]

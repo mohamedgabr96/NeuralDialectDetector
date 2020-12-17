@@ -35,17 +35,16 @@ def parse_classes_list(path_to_folder):
 def parse_data(path_to_file, separator="\t"):
     with open(path_to_file, encoding="utf-8") as file_open:
         lines = file_open.readlines()
-    
-    lines_split = [line.split(separator)[1:] for line in lines]
+
+    lines_split = [line.split("\t")[1:3] for line in lines[1:]]
     return lines_split
 
 
-def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar"):
-    data_examples = parse_data(os.path.join(path_to_data_folder, f"{split_set}-{locale}.tsv"))
+def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", random_sampler=True):
+    data_examples = parse_data(os.path.join(path_to_data_folder, f"DA_{split_set}_labeled.tsv"))
     dataset = load_and_cache_examples(data_examples, tokenizer, classes_list)
-    data_sampler = RandomSampler(dataset)
-    generator = torch.utils.data.DataLoader(dataset, sampler=data_sampler, **params)
-
+    data_sampler = RandomSampler(dataset) if random_sampler else None
+    generator = torch.utils.data.DataLoader(dataset, shuffle=not random_sampler, sampler=data_sampler, **params)
     return generator
 
 
@@ -54,7 +53,7 @@ def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2):
     classes_list = parse_classes_list(path_to_data_folder)
     training_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar")
     dev_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="dev", locale="ar")
-    test_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="test", locale="ar")
+    test_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="dev", locale="ar")
 
     return training_generator, dev_generator, test_generator, len(classes_list)
 
