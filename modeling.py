@@ -8,6 +8,7 @@ from tqdm import tqdm, trange
 import numpy as np
 import os
 import neptune
+import random 
 
 logger = logging.getLogger(__name__)
 
@@ -54,10 +55,19 @@ class Trainer():
                                                             config=model_config,
                                                             args=self.configs)
         model.to(self.configs["device"])
-        total_steps = len(train_loader) // self.configs["num_epochs"]
+        total_steps = len(train_loader) * self.configs["num_epochs"]
 
         # Initialize Optimizers
-        optimizer = AdamW(model.parameters(), lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
+        # optimizer = AdamW(model.parameters(), lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
+        optimizer = AdamW([
+            {
+                'params': model.transformer_model.parameters()
+            },
+            {
+                'params': model.classif_head.parameters(),
+                'lr': 1.e-3
+            }
+        ], lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
         scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.configs["warmup_steps"], num_training_steps=total_steps)
 
         model.zero_grad()
@@ -87,7 +97,8 @@ class Trainer():
                 training_loss += loss.item()
 
                 neptune.log_metric('train_loss', x=global_step, y=loss.item())
-                neptune.log_metric('learning_rate', x=global_step, y=optimizer.param_groups[0]['lr'])
+                neptune.log_metric('learning_rate_body', x=global_step, y=optimizer.param_groups[0]['lr'])
+                neptune.log_metric('learning_rate_head', x=global_step, y=optimizer.param_groups[1]['lr'])
 
                 optimizer.step()
                 scheduler.step()  
@@ -210,4 +221,4 @@ if __name__ == "__main__":
     trainer_class = Trainer()
     # trainer_class.train()
     # trainer_class.train_with_multiple_seeds(3)
-    trainer_class.train_and_evaluate_with_multiple_seeds(2)
+    trainer_class.train_and_evaluate_with_multiple_seeds(1, seeds_from_config=True)

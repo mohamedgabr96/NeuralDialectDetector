@@ -20,7 +20,8 @@ def save_yaml_file(file_path, content):
 
 
 def save_model(model, tokenizer, path, used_config, step_no, current_dev_score=0):
-    final_path = os.path.join(path, f"checkpoint_w_dev_loss_{current_dev_score}_at_step_{step_no}_uuid_{uuid.uuid4().hex}")
+    # final_path = os.path.join(path, f"checkpoint_w_dev_loss_{current_dev_score}_at_step_{step_no}_uuid_{uuid.uuid4().hex}")
+    final_path = os.path.join(path, used_config["run_title"])
     if not os.path.exists(final_path):
         os.makedirs(final_path)
     model.save_pretrained(final_path)
