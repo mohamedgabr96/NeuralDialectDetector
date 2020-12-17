@@ -38,7 +38,7 @@ class Trainer():
         model = ArabicDialectBERT.from_pretrained(self.model_name_path,
                                                             config=model_config,
                                                             args=self.configs)
-
+        model.to(self.configs["device"])
         total_steps = len(train_loader) // self.configs["num_epochs"]
 
         # Initialize Optimizers
@@ -134,6 +134,8 @@ class Trainer():
         model = ArabicDialectBERT.from_pretrained(model_path,
                                                             config=model_config,
                                                             args=self.configs)
+
+        model.to(self.configs["device"])
 
         final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, device=self.configs["device"])
         final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, device=self.configs["device"])
