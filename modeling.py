@@ -7,6 +7,7 @@ import torch
 from tqdm import tqdm, trange
 import numpy as np
 import os
+import neptune
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,9 @@ class Trainer():
         self.configs = read_yaml_file(config_file_path)
         self.model_name_path = self.configs["model_name_path"]
         logging.basicConfig(filename=os.path.join(self.configs["checkpointing_path"], 'training_log.log'), level=logging.DEBUG)
+        neptune.init(project_qualified_name='mohamedgabr96/sandbox',
+             api_token=self.configs["neptuneaiAPI"],
+             )
 
     @staticmethod
     def set_seeds(seed_val):
@@ -26,7 +30,18 @@ class Trainer():
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
+    def log_single_metrics_to_neptune(self):
+        neptune.log_metric('batch_size', self.configs["batch_size"])
+        neptune.log_metric('classif_dropout_rate', self.configs["classif_dropout_rate"])
+        neptune.log_metric('initial_learning_rate', self.configs["initial_learning_rate"])
+        neptune.log_metric('adam_epsilon', self.configs["adam_epsilon"])
+        neptune.log_metric('warmup_steps', self.configs["warmup_steps"])
+        neptune.log_metric('num_epochs', self.configs["num_epochs"])
+        neptune.log_metric('num_epochs', self.configs["num_epochs"])
+
     def train(self):
+        neptune.create_experiment(name=self.configs["neptune_experiment_name"])
+        self.log_single_metrics_to_neptune()
         tokenizer = AutoTokenizer.from_pretrained(self.model_name_path)
         model_config = AutoConfig.from_pretrained(self.model_name_path)
 
@@ -55,6 +70,8 @@ class Trainer():
         training_loss = 0.0
         best_dev_loss = np.inf
         curr_dev_loss = np.inf
+        early_stop_count_patience = 0
+        to_early_stop = False
         for _ in no_epochs:
             no_batches = tqdm(train_loader, desc="Batches Loop")
             for batch in no_batches:
@@ -69,6 +86,9 @@ class Trainer():
 
                 training_loss += loss.item()
 
+                neptune.log_metric('train_loss', x=global_step, y=loss.item())
+                neptune.log_metric('learning_rate', x=global_step, y=optimizer.param_groups[0]['lr'])
+
                 optimizer.step()
                 scheduler.step()  
                 model.zero_grad()
@@ -76,21 +96,36 @@ class Trainer():
 
                 if global_step % self.configs["improvement_check_freq"] == 0:
                     dev_accuracy, curr_dev_loss = evaluate_predictions(model, dev_loader, device=self.configs["device"])
+                    neptune.log_metric('dev_loss', x=global_step, y=curr_dev_loss)
+                    neptune.log_metric('dev_accuracy', x=global_step, y=dev_accuracy)
+                    early_stop_count_patience += 1
+
+                if self.configs["early_stopping"] and early_stop_count_patience > self.configs["early_stopping_patience"]:
+                    logger.info(f"Early Stopping, no improvements on dev score for no patience steps")
+                    to_early_stop = True
+                    break
 
                 if self.configs["checkpoint_on_improvement"] and curr_dev_loss < best_dev_loss:
                     logger.info(f"Dev Loss Reduction from {best_dev_loss} to {curr_dev_loss}")
                     best_model_path = save_model(model, tokenizer, self.configs["checkpointing_path"], self.configs, step_no=global_step, current_dev_score=best_dev_loss)
+                    best_dev_loss = curr_dev_loss
+                    early_stop_count_patience = 0
 
                 if self.configs["checkpointing_on"] and global_step % self.configs["checkpointing_freq"] == 0:
                     logger.info(f"Checkpointing...")
                     save_model(model, tokenizer, self.configs["checkpointing_path"], self.configs, step_no=global_step, current_dev_score=best_dev_loss)
-
+            if to_early_stop:
+                break
+       
         loss_final = training_loss / global_step
 
         # Final Evaluation Loop
 
         final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, device=self.configs["device"])
         final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, device=self.configs["device"])
+
+        neptune.log_metric('dev_loss', x=global_step, y=final_dev_loss)
+        neptune.log_metric('dev_accuracy', x=global_step, y=final_dev_accuracy)
 
         # Final Model Saving
         if self.configs["save_final_model"]:
