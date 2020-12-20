@@ -1,7 +1,6 @@
 from transformers import AutoTokenizer, AutoModel, AutoConfig, AdamW, get_linear_schedule_with_warmup
 from dataset_utils import parse_and_generate_loaders
 from general_utils import read_yaml_file, save_model, evaluate_predictions, update_dict_of_agg, save_json
-from model import ArabicDialectBERT
 import logging
 import torch
 from tqdm import tqdm, trange
@@ -9,6 +8,7 @@ import numpy as np
 import os
 import neptune
 import random 
+import model as model_classes
 
 logger = logging.getLogger(__name__)
 
@@ -47,28 +47,30 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(self.model_name_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"])
+        train_loader, dev_loader, test_loader, no_labels = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"])
         self.configs["num_labels"] = no_labels
 
         # model = AutoModel.from_pretrained(self.model_name_path)
         # Instantiate Model
-        model = ArabicDialectBERT.from_pretrained(self.model_name_path,
+        model = getattr(model_classes, self.configs["model_class"]).from_pretrained(self.model_name_path,
                                                             config=model_config,
                                                             args=self.configs)
         model.to(self.configs["device"])
         total_steps = len(train_loader) * self.configs["num_epochs"]
 
         # Initialize Optimizers
-        # optimizer = AdamW(model.parameters(), lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
-        optimizer = AdamW([
-            {
-                'params': model.bert.parameters()
-            },
-            {
-                'params': model.classif_head.parameters(),
-                'lr': 1.e-3
-            }
-        ], lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
+        if self.configs["model_class"] == "ArabicDialectBERTMaskedLM":
+            optimizer = AdamW(model.parameters(), lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
+        else:
+            optimizer = AdamW([
+                {
+                    'params': model.bert.parameters()
+                },
+                {
+                    'params': model.classif_head.parameters(),
+                    'lr': 1.e-3
+                }
+            ], lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
         scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.configs["warmup_steps"], num_training_steps=total_steps)
 
         model.zero_grad()
@@ -90,7 +92,7 @@ class Trainer():
                 model.train()
                 
                 batch = [x.to(self.configs["device"]) for x in batch]
-                outputs = model(input_ids=batch[0], attention_mask=batch[1], token_type_ids=batch[2], class_label_ids=batch[3])
+                outputs = model(input_ids=batch[0], attention_mask=batch[1], token_type_ids=batch[2], class_label_ids=batch[3], input_ids_masked=batch[4])
                 loss = outputs[0]
 
                 loss.backward()
@@ -99,7 +101,8 @@ class Trainer():
 
                 neptune.log_metric('train_loss', x=global_step, y=loss.item())
                 neptune.log_metric('learning_rate_body', x=global_step, y=optimizer.param_groups[0]['lr'])
-                neptune.log_metric('learning_rate_head', x=global_step, y=optimizer.param_groups[1]['lr'])
+                if len(optimizer.param_groups) > 1:
+                    neptune.log_metric('learning_rate_head', x=global_step, y=optimizer.param_groups[1]['lr'])
 
                 optimizer.step()
                 scheduler.step()  
@@ -107,7 +110,7 @@ class Trainer():
                 global_step += 1
 
                 if global_step % self.configs["improvement_check_freq"] == 0:
-                    dev_accuracy, curr_dev_loss = evaluate_predictions(model, dev_loader, device=self.configs["device"])
+                    dev_accuracy, curr_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
                     neptune.log_metric('dev_loss', x=global_step, y=curr_dev_loss)
                     neptune.log_metric('dev_accuracy', x=global_step, y=dev_accuracy)
                     early_stop_count_patience += 1
@@ -133,8 +136,8 @@ class Trainer():
 
         # Final Evaluation Loop
 
-        final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, device=self.configs["device"])
-        final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, device=self.configs["device"])
+        final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
+        final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"])
 
         neptune.log_metric('dev_loss', x=global_step, y=final_dev_loss)
         neptune.log_metric('dev_accuracy', x=global_step, y=final_dev_accuracy)
@@ -174,24 +177,24 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(model_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"])
+        train_loader, dev_loader, test_loader, no_labels = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"])
         self.configs["num_labels"] = no_labels
 
         # Instantiate Model
-        model = ArabicDialectBERT.from_pretrained(model_path,
+        model = getattr(model_classes, self.configs["model_class"]).from_pretrained(model_path,
                                                             config=model_config,
                                                             args=self.configs)
 
         model.to(self.configs["device"])
 
-        final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, device=self.configs["device"])
-        final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, device=self.configs["device"])
+        final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
+        final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"])
 
         dict_of_results["DEV"] = {"Accuracy": final_dev_accuracy, "Loss": final_dev_loss} 
         dict_of_results["TEST"] = {"Accuracy": final_test_accuracy, "Loss": final_test_loss}
 
         if evaluate_on_train:
-            final_train_accuracy, final_train_loss = evaluate_predictions(model, train_loader, device=self.configs["device"])
+            final_train_accuracy, final_train_loss = evaluate_predictions(model, train_loader, self.configs["model_class"], device=self.configs["device"])
             dict_of_results["TRAIN"] = {"Accuracy": final_train_accuracy, "Loss": final_train_loss}
 
         return dict_of_results

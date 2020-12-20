@@ -47,7 +47,7 @@ def save_json(path_to_file, content):
         json.dump(content, ff)
 
 
-def evaluate_predictions(model, evaluation_loader, device="cpu"):
+def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu"):
     model.eval()
     no_batches = tqdm(evaluation_loader, desc="Batch Evaluation Loop")
     final_eval_loss = 0
@@ -56,7 +56,7 @@ def evaluate_predictions(model, evaluation_loader, device="cpu"):
     for batch in no_batches:
         with torch.no_grad():
             batch = [x.to(device) for x in batch]
-            outputs = model(input_ids=batch[0], attention_mask=batch[1], token_type_ids=batch[2], class_label_ids=batch[3])
+            outputs = model(input_ids=batch[0], attention_mask=batch[1], token_type_ids=batch[2], class_label_ids=batch[3], input_ids_masked=batch[4])
             eval_loss, (logits,) = outputs[:2]
             final_eval_loss += eval_loss.mean().item()
                  
@@ -68,9 +68,12 @@ def evaluate_predictions(model, evaluation_loader, device="cpu"):
         else:
             final_preds = np.append(final_preds, logits.detach().cpu().numpy(), axis=0)
             label_ids = np.append(label_ids, batch[3].detach().cpu().numpy(), axis=0)
-
-    final_preds = np.argmax(final_preds, axis=1)
-    accuracy = (final_preds == label_ids).mean()
+    
+    if model_class_name == "ArabicDialectBERT":
+        final_preds = np.argmax(final_preds, axis=1)
+        accuracy = (final_preds == label_ids).mean()
+    else:
+        accuracy = 0
     eval_loss = final_eval_loss / total_no_steps
 
     return accuracy, eval_loss

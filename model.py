@@ -1,6 +1,7 @@
 import torch.nn as nn
 from transformers import AutoModel, PreTrainedModel
-from transformers import BertModel, BertPreTrainedModel
+from transformers import BertModel, BertPreTrainedModel, BertForMaskedLM
+from transformers.models.bert.modeling_bert import BertOnlyMLMHead
 
 class ClassificationHead(nn.Module):
     def __init__(self, input_dim, num_labels, dropout_rate=0.):
@@ -22,7 +23,7 @@ class ArabicDialectBERT(BertPreTrainedModel):
 
         self.classif_head = ClassificationHead(config.hidden_size, self.num_labels, args["classif_dropout_rate"])
 
-    def forward(self, input_ids, attention_mask, token_type_ids, class_label_ids):
+    def forward(self, input_ids, attention_mask, token_type_ids, class_label_ids, input_ids_masked):
         outputs = self.bert(input_ids, attention_mask=attention_mask,
                             token_type_ids=token_type_ids)  # sequence_output, pooled_output, (hidden_states), (attentions)
         sequence_output = outputs[0]  # Not needed for now
@@ -46,3 +47,35 @@ class ArabicDialectBERT(BertPreTrainedModel):
         outputs = (total_loss,) + outputs
 
         return outputs  # (loss), logits, (hidden_states), (attentions) # Logits is a tuple of intent and slot logits
+
+
+class ArabicDialectBERTMaskedLM(BertForMaskedLM):
+    def __init__(self, config, args):
+        super(ArabicDialectBERTMaskedLM, self).__init__(config)
+        self.args = args
+        self.bert = BertModel(config, add_pooling_layer=False)
+        self.cls = BertOnlyMLMHead(config)
+        self.init_weights()
+
+    def forward(self, input_ids, attention_mask, token_type_ids, class_label_ids, input_ids_masked):
+        
+        outputs = self.bert(
+            input_ids_masked,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            return_dict=return_dict
+        )
+
+        sequence_output = outputs[0]
+        prediction_scores = self.cls(sequence_output)
+
+        masked_lm_loss = None
+        if input_ids is not None:
+            loss_fct = nn.CrossEntropyLoss()  # -100 index = padding token
+            masked_lm_loss = loss_fct(prediction_scores.view(-1, self.config.vocab_size), input_ids.view(-1))
+
+        outputs = ((prediction_scores, ),) + outputs[2:]  # add hidden states and attention if they are here
+
+        outputs = (masked_lm_loss,) + outputs
+
+        return outputs
