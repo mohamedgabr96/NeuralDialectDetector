@@ -1,6 +1,6 @@
 import torch.nn as nn
 from transformers import AutoModel, PreTrainedModel
-
+from transformers import BertModel, BertPreTrainedModel
 
 class ClassificationHead(nn.Module):
     def __init__(self, input_dim, num_labels, dropout_rate=0.):
@@ -13,17 +13,17 @@ class ClassificationHead(nn.Module):
         return self.linear(x)
 
 
-class ArabicDialectBERT(PreTrainedModel):
+class ArabicDialectBERT(BertPreTrainedModel):
     def __init__(self, config, args):
         super(ArabicDialectBERT, self).__init__(config, args)
         self.args = args
         self.num_labels = args["num_labels"]
-        self.transformer_model = AutoModel.from_config(config)  # TO-DO: Add adapters function that changes encoder here # Load pretrained bert
+        self.bert = BertModel(config=config)  # TO-DO: Add adapters function that changes encoder here # Load pretrained bert
 
         self.classif_head = ClassificationHead(config.hidden_size, self.num_labels, args["classif_dropout_rate"])
 
     def forward(self, input_ids, attention_mask, token_type_ids, class_label_ids):
-        outputs = self.transformer_model(input_ids, attention_mask=attention_mask,
+        outputs = self.bert(input_ids, attention_mask=attention_mask,
                             token_type_ids=token_type_ids)  # sequence_output, pooled_output, (hidden_states), (attentions)
         sequence_output = outputs[0]  # Not needed for now
         pooled_output = outputs[1]  # [CLS]

@@ -50,6 +50,7 @@ class Trainer():
         train_loader, dev_loader, test_loader, no_labels = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"])
         self.configs["num_labels"] = no_labels
 
+        # model = AutoModel.from_pretrained(self.model_name_path)
         # Instantiate Model
         model = ArabicDialectBERT.from_pretrained(self.model_name_path,
                                                             config=model_config,
@@ -61,7 +62,7 @@ class Trainer():
         # optimizer = AdamW(model.parameters(), lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
         optimizer = AdamW([
             {
-                'params': model.transformer_model.parameters()
+                'params': model.bert.parameters()
             },
             {
                 'params': model.classif_head.parameters(),
