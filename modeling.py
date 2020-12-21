@@ -47,7 +47,7 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(self.model_name_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"])
+        train_loader, dev_loader, test_loader, no_labels = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"])
         self.configs["num_labels"] = no_labels
 
         # model = AutoModel.from_pretrained(self.model_name_path)
@@ -177,7 +177,7 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(model_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"])
+        train_loader, dev_loader, test_loader, no_labels = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"])
         self.configs["num_labels"] = no_labels
 
         # Instantiate Model

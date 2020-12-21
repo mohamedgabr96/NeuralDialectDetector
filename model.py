@@ -2,6 +2,7 @@ import torch.nn as nn
 from transformers import AutoModel, PreTrainedModel
 from transformers import BertModel, BertPreTrainedModel, BertForMaskedLM
 from transformers.models.bert.modeling_bert import BertOnlyMLMHead
+from AdaptersComponents.BertLayerAdapter import BertLayer_w_Adapters
 
 class ClassificationHead(nn.Module):
     def __init__(self, input_dim, num_labels, dropout_rate=0.):
@@ -20,6 +21,13 @@ class ArabicDialectBERT(BertPreTrainedModel):
         self.args = args
         self.num_labels = args["num_labels"]
         self.bert = BertModel(config=config)  # TO-DO: Add adapters function that changes encoder here # Load pretrained bert
+        
+        if args["use_adapters"]:
+            self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"]) for _ in range(config.num_hidden_layers)])
+            for param in self.bert.encoder.layer.named_parameters():
+                if "adapter_layer" not in param[0]:
+                    param[1].requires_grad = False
+            # Freeze all except adapters and head
 
         self.classif_head = ClassificationHead(config.hidden_size, self.num_labels, args["classif_dropout_rate"])
 
@@ -54,16 +62,24 @@ class ArabicDialectBERTMaskedLM(BertForMaskedLM):
         super(ArabicDialectBERTMaskedLM, self).__init__(config)
         self.args = args
         self.bert = BertModel(config, add_pooling_layer=False)
+
+        if args["use_adapters"]:
+            self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"]) for _ in range(config.num_hidden_layers)])
+            for param in self.bert.encoder.layer.named_parameters():
+                if "adapter_layer" not in param[0]:
+                    param[1].requires_grad = False
+            # Freeze all except adapters and head
+
         self.cls = BertOnlyMLMHead(config)
         self.init_weights()
 
     def forward(self, input_ids, attention_mask, token_type_ids, class_label_ids, input_ids_masked):
-        
+
         outputs = self.bert(
             input_ids_masked,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
-            return_dict=return_dict
+            return_dict=True
         )
 
         sequence_output = outputs[0]

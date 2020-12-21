@@ -33,28 +33,30 @@ def parse_classes_list(path_to_folder):
     return [line.strip("\n") for line in lines]
 
 
-def parse_data(path_to_file, separator="\t"):
+def parse_data(path_to_file, separator="\t", class_to_filter=None):
     with open(path_to_file, encoding="utf-8") as file_open:
         lines = file_open.readlines()
-
+  
     lines_split = [line.split("\t")[1:3] for line in lines[1:]]
+    if class_to_filter is not None:
+        lines_split = [x for x in lines_split if x[1]==class_to_filter]
     return lines_split
 
 
-def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", random_sampler=True, masking_percentage=0.2):
-    data_examples = parse_data(os.path.join(path_to_data_folder, f"DA_{split_set}_labeled.tsv"))
+def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", random_sampler=True, masking_percentage=0.2, class_to_filter=None):
+    data_examples = parse_data(os.path.join(path_to_data_folder, f"DA_{split_set}_labeled.tsv"), class_to_filter=class_to_filter)
     dataset = load_and_cache_examples(data_examples, tokenizer, classes_list, masking_percentage=masking_percentage)
     data_sampler = RandomSampler(dataset) if random_sampler else None
     generator = torch.utils.data.DataLoader(dataset, shuffle=not random_sampler, sampler=data_sampler, **params)
     return generator
 
 
-def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, masking_percentage=0.2):
+def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, masking_percentage=0.2, class_to_filter=None):
     params = {'batch_size': batch_size}
-    classes_list = parse_classes_list(path_to_data_folder)
-    training_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", masking_percentage=masking_percentage)
-    dev_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage)
-    test_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage)
+    classes_list = parse_classes_list(path_to_data_folder) if class_to_filter is None else [class_to_filter]
+    training_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
+    dev_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
+    test_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
 
     return training_generator, dev_generator, test_generator, len(classes_list)
 
