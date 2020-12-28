@@ -1,15 +1,15 @@
-run_title: baseline_5
-path_to_data: /home/mohamedgabr/NeuralDialectDetector/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
-checkpointing_path: /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline
+run_title: adaptor_egy
+path_to_data: NADI2021_DEV.1.0/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
+checkpointing_path: checkpoints
 model_name_path: "bashar-talafha/multi-dialect-bert-base-arabic"
 model_class: ArabicDialectBERTMaskedLM # ArabicDialectBERT  # Or 
-masking_percentage: 0.1 # Applies when training w MLM
+masking_percentage: 0.2 # Applies when training w MLM
 batch_size: 16 # 64
 classif_dropout_rate: 0.1
 initial_learning_rate: 3.75e-4
 adam_epsilon: 1.0e-08
-warmup_steps: 500
-num_epochs: 3 # 10
+warmup_steps: 0
+num_epochs: 20 # 10
 early_stopping: true
 early_stopping_patience: 20
 device: cuda # Choose between cpu and cuda
@@ -17,16 +17,16 @@ save_final_model: true
 checkpointing_on: false
 checkpointing_freq: 20 # Needs the argument above to be true
 checkpoint_on_improvement: true
-improvement_check_freq: 20 # Needs the argument above to be true
+improvement_check_freq: 10 # Needs the argument above to be true
 seed_list: [1033, 611, 520, 300, 760]
-one_class_filtration: Lebanon  # Empty for all classes to use, useful for MLM per dialect adapter
+one_class_filtration: Egypt  # Empty for all classes to use, useful for MLM per dialect adapter
 # seed_list: [760]
 neptuneaiAPI: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsImFwaV91cmwiOiJodHRwczovL3VpLm5lcHR1bmUuYWkiLCJhcGlfa2V5IjoiYzNlOTI4MDUtMWEwMC00N2U3LWEzYTAtZjAyMzA2YzE1YjI3In0=
-neptune_experiment_name: "first_trials_after_fix"
+neptune_experiment_name: "adaptor_fusion_stage_1_egypt"
 
 ## Adapter settings
 use_adapters: true
 bottleneck_dim: 32
-current_adapter_to_train: 0 # We will use same order as classes txt
+current_adapter_to_train: 13 # We will use same order as classes txt
 no_total_adapters: 20
 stage_2_training: false
