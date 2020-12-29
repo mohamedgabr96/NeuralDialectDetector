@@ -17,7 +17,7 @@ save_final_model: true
 checkpointing_on: false
 checkpointing_freq: 20 # Needs the argument above to be true
 checkpoint_on_improvement: true
-improvement_check_freq: 20 # Needs the argument above to be true
+improvement_check_freq: 10 # Needs the argument above to be true
 seed_list: [1033, 611, 520, 300, 760]
 one_class_filtration: Oman  # Empty for all classes to use, useful for MLM per dialect adapter
 # seed_list: [760]

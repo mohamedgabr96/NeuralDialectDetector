@@ -50,30 +50,26 @@ def save_json(path_to_file, content):
 def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu"):
     model.eval()
     no_batches = tqdm(evaluation_loader, desc="Batch Evaluation Loop")
-    final_eval_loss = 0
-    total_no_steps = 0
-    final_preds = None
+    final_eval_loss, correct = 0, 0
+    total_no_steps, num_samples = 0, 0
     for batch in no_batches:
-        with torch.no_grad():
-            batch = [x.to(device) for x in batch]
-            outputs = model(input_ids=batch[0], attention_mask=batch[1], token_type_ids=batch[2], class_label_ids=batch[3], input_ids_masked=batch[4])
-            eval_loss, (logits,) = outputs[:2]
-            final_eval_loss += eval_loss.mean().item()
+        batch = [x.to(device) for x in batch]
+        outputs = model(input_ids=batch[0], attention_mask=batch[1], token_type_ids=batch[2], class_label_ids=batch[3], input_ids_masked=batch[4])
+        eval_loss, (logits,) = outputs[:2]
+        final_eval_loss += eval_loss.mean().item()
                  
         total_no_steps += 1
 
-        if final_preds is None:
-            final_preds = logits.detach().cpu().numpy()
-            label_ids = batch[3].detach().cpu().numpy()
-        else:
-            final_preds = np.append(final_preds, logits.detach().cpu().numpy(), axis=0)
-            label_ids = np.append(label_ids, batch[3].detach().cpu().numpy(), axis=0)
+        if model_class_name == "ArabicDialectBERT":
+            label_ids = logits.argmax(axis=1)
+            correct += (label_ids == batch[3]).sum()
+            num_samples += label_ids.size(0)
     
     if model_class_name == "ArabicDialectBERT":
-        final_preds = np.argmax(final_preds, axis=1)
-        accuracy = (final_preds == label_ids).mean()
+        accuracy = correct / num_samples
     else:
         accuracy = 0
+        
     eval_loss = final_eval_loss / total_no_steps
 
     return accuracy, eval_loss
