@@ -6,7 +6,7 @@ checkpointing_freq: 20
 checkpointing_on: false
 checkpointing_path: /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline
 classif_dropout_rate: 0.1
-current_adapter_to_train: 1
+current_adapter_to_train: 0
 device: cuda
 early_stopping: true
 early_stopping_patience: 20
@@ -14,14 +14,14 @@ improvement_check_freq: 10
 initial_learning_rate: 0.000275
 masking_percentage: 0.2
 model_class: ArabicDialectBERTMaskedLM
-model_name_path: /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline/adapter_fusion_Lebanon
-neptune_experiment_name: adapter_fusion_stage_1_Jordan
+model_name_path: bashar-talafha/multi-dialect-bert-base-arabic
+neptune_experiment_name: adapter_fusion_stage_1_Lebanon
 neptuneaiAPI: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsImFwaV91cmwiOiJodHRwczovL3VpLm5lcHR1bmUuYWkiLCJhcGlfa2V5IjoiYzNlOTI4MDUtMWEwMC00N2U3LWEzYTAtZjAyMzA2YzE1YjI3In0=
 no_total_adapters: 20
 num_epochs: 50
-one_class_filtration: Jordan
+one_class_filtration: Lebanon
 path_to_data: /home/mohamedgabr/NeuralDialectDetector/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
-run_title: adapter_fusion_Jordan
+run_title: adapter_fusion_Lebanon
 save_final_model: true
 seed_list:
 - 1033
@@ -32,3 +32,4 @@ seed_list:
 stage_2_training: false
 use_adapters: true
 warmup_steps: 0
+use_adapt_after_fusion: false

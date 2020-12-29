@@ -1,8 +1,8 @@
-run_title: baseline_11
+run_title: baseline_111
 path_to_data: /home/mohamedgabr/NeuralDialectDetector/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
 checkpointing_path: /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline
 model_name_path: /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline/baseline_10  # "bashar-talafha/multi-dialect-bert-base-arabic"
-model_class: ArabicDialectBERTMaskedLM # ArabicDialectBERT  # Or 
+model_class: ArabicDialectBERT # ArabicDialectBERTMaskedLM #   # Or 
 masking_percentage: 0.2 # Applies when training w MLM
 batch_size: 8 # 16 # 64
 classif_dropout_rate: 0.1
@@ -19,14 +19,15 @@ checkpointing_freq: 20 # Needs the argument above to be true
 checkpoint_on_improvement: true
 improvement_check_freq: 10 # Needs the argument above to be true
 seed_list: [1033, 611, 520, 300, 760]
-one_class_filtration: Morocco  # Empty for all classes to use, useful for MLM per dialect adapter
+one_class_filtration: null # Morocco  # Empty for all classes to use, useful for MLM per dialect adapter
 # seed_list: [760]
 neptuneaiAPI: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsImFwaV91cmwiOiJodHRwczovL3VpLm5lcHR1bmUuYWkiLCJhcGlfa2V5IjoiYzNlOTI4MDUtMWEwMC00N2U3LWEzYTAtZjAyMzA2YzE1YjI3In0=
-neptune_experiment_name: "adapter_fusion_stage_1_Morocco"
+neptune_experiment_name: "adapter_fusion_stage_2_trial"
 
 ## Adapter settings
 use_adapters: true
 bottleneck_dim: 32
 current_adapter_to_train: 6 # We will use same order as classes txt
 no_total_adapters: 20
-stage_2_training: false
+stage_2_training: true
+use_adapt_after_fusion: false # applies only with stage 2 training

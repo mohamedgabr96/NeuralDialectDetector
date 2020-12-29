@@ -7,9 +7,9 @@ from AdaptersComponents.AdapterModules import AdapterFusionModule
 # Taking each huggingface layer and overriding what should be overriden
 
 class BertSelfOutput_w_adapters(BertSelfOutput):
-    def __init__(self, config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training):
+    def __init__(self, config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion):
         super(BertSelfOutput_w_adapters, self).__init__(config)
-        self.adapter_layer = AdapterFusionModule(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training)
+        self.adapter_layer = AdapterFusionModule(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion)
 
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
@@ -20,9 +20,9 @@ class BertSelfOutput_w_adapters(BertSelfOutput):
 
 
 class BertOutput_w_adapters(BertOutput):
-    def __init__(self, config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training):
+    def __init__(self, config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion):
         super(BertOutput_w_adapters, self).__init__(config)
-        self.adapter_layer = AdapterFusionModule(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training)
+        self.adapter_layer = AdapterFusionModule(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion)
 
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
@@ -33,16 +33,16 @@ class BertOutput_w_adapters(BertOutput):
 
 
 class AdapterAttention(BertAttention):
-    def __init__(self, config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training):
+    def __init__(self, config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion):
         super(AdapterAttention, self).__init__(config)
-        self.output = BertSelfOutput_w_adapters(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training) # Override with new SelfOut
+        self.output = BertSelfOutput_w_adapters(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion) # Override with new SelfOut
 
 
 class BertLayer_w_Adapters(BertLayer):
-    def __init__(self, config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training):
+    def __init__(self, config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion):
         super(BertLayer_w_Adapters, self).__init__(config)
-        self.attention = AdapterAttention(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training)
+        self.attention = AdapterAttention(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion)
         self.is_decoder = config.is_decoder
         if self.is_decoder:
-            self.crossattention = AdapterAttention(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training)
-        self.output = BertOutput_w_adapters(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training)
+            self.crossattention = AdapterAttention(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion)
+        self.output = BertOutput_w_adapters(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion)

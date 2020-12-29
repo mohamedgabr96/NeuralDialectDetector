@@ -23,7 +23,7 @@ class ArabicDialectBERT(BertPreTrainedModel):
         self.bert = BertModel(config=config)  # TO-DO: Add adapters function that changes encoder here # Load pretrained bert
         
         if args["use_adapters"]:
-            self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"]) for _ in range(config.num_hidden_layers)])
+            self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
             for param in self.bert.encoder.layer.named_parameters():
                 if "adapter_layer" not in param[0]:
                     param[1].requires_grad = False
@@ -64,7 +64,7 @@ class ArabicDialectBERTMaskedLM(BertForMaskedLM):
         self.bert = BertModel(config, add_pooling_layer=False)
 
         if args["use_adapters"]:
-            self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"]) for _ in range(config.num_hidden_layers)])
+            self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
             for param in self.bert.encoder.layer.named_parameters():
                 if "adapter_layer" not in param[0]:
                     param[1].requires_grad = False
