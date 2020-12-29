@@ -38,7 +38,7 @@ class Trainer():
         neptune.log_metric('adam_epsilon', self.configs["adam_epsilon"])
         neptune.log_metric('warmup_steps', self.configs["warmup_steps"])
         neptune.log_metric('num_epochs', self.configs["num_epochs"])
-        neptune.log_metric('num_epochs', self.configs["num_epochs"])
+        neptune.log_metric('masking_percentage', self.configs["masking_percentage"])
 
     def train(self):
         neptune.create_experiment(name=self.configs["neptune_experiment_name"])
@@ -217,7 +217,7 @@ class Trainer():
         dict_of_seed_results["Agg"] = aggregation_dict
 
         save_json(os.path.join(self.configs["checkpointing_path"], "final_scores.json"), dict_of_seed_results)
-
+        neptune.stop()
         return dict_of_seed_results
 
 
