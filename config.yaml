@@ -1,7 +1,7 @@
 run_title: baseline_111
 path_to_data: /home/mohamedgabr/NeuralDialectDetector/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
 checkpointing_path: /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline
-model_name_path: bashar-talafha/multi-dialect-bert-base-arabic # /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline/baseline_10  # "bashar-talafha/multi-dialect-bert-base-arabic"
+model_name_path: /home/mohamedgabr/NeuralDialectDetector/model_w_adapters # bashar-talafha/multi-dialect-bert-base-arabic # /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline/baseline_10  # "bashar-talafha/multi-dialect-bert-base-arabic"
 model_class: ArabicDialectBERT # ArabicDialectBERTMaskedLM #   # Or 
 masking_percentage: 0.2 # Applies when training w MLM
 batch_size: 8 # 16 # 64
@@ -29,7 +29,7 @@ neptune_experiment_name: "adapter_fusion_stage_2_trial_with_after"
 ## Settings for all adapts
 use_adapters: true
 adapter_type: "plain_adapter"
-bottleneck_dim: 32
+bottleneck_dim: 384
 
 ## settings for fusion
 current_adapter_to_train: 6 # We will use same order as classes txt
