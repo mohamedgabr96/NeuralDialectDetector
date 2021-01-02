@@ -55,7 +55,7 @@ def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, mas
     params = {'batch_size': batch_size}
     classes_list = parse_classes_list(path_to_data_folder) if class_to_filter is None else [class_to_filter]
     training_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
-    dev_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
+    dev_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, {'batch_size': 1}, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
     test_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
 
     return training_generator, dev_generator, test_generator, len(classes_list)

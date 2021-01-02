@@ -1,12 +1,12 @@
-run_title: baseline_111
-path_to_data: /home/mohamedgabr/NeuralDialectDetector/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
-checkpointing_path: /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline
-model_name_path: /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline/baseline_10  # "bashar-talafha/multi-dialect-bert-base-arabic"
+run_title: classification_run_3
+path_to_data: NADI2021_DEV.1.0/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
+checkpointing_path: checkpoints
+model_name_path: checkpoints/adapter_fusion_Libya  # "bashar-talafha/multi-dialect-bert-base-arabic"
 model_class: ArabicDialectBERT # ArabicDialectBERTMaskedLM #   # Or 
 masking_percentage: 0.2 # Applies when training w MLM
-batch_size: 8 # 16 # 64
+batch_size: 8 # 64
 classif_dropout_rate: 0.1
-initial_learning_rate: 2.75e-4
+initial_learning_rate: 8.e-5 # 2.75e-4
 adam_epsilon: 1.0e-08
 warmup_steps: 0
 num_epochs: 100 # 30 # 10
@@ -17,7 +17,7 @@ save_final_model: true
 checkpointing_on: false
 checkpointing_freq: 20 # Needs the argument above to be true
 checkpoint_on_improvement: true
-improvement_check_freq: 10 # Needs the argument above to be true
+improvement_check_freq: 2600 # Needs the argument above to be true
 seed_list: [1033, 611, 520, 300, 760]
 one_class_filtration: null # Morocco  # Empty for all classes to use, useful for MLM per dialect adapter
 # seed_list: [760]
@@ -33,6 +33,6 @@ bottleneck_dim: 32
 
 ## settings for fusion
 current_adapter_to_train: 6 # We will use same order as classes txt
-no_total_adapters: 20
+no_total_adapters: 21
 stage_2_training: true
 use_adapt_after_fusion: true # applies only with stage 2 training

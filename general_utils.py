@@ -66,7 +66,7 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
             num_samples += label_ids.size(0)
     
     if model_class_name == "ArabicDialectBERT":
-        accuracy = correct / num_samples
+        accuracy = correct / float(num_samples)
     else:
         accuracy = 0
         
