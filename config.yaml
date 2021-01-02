@@ -1,7 +1,7 @@
 run_title: baseline_111
 path_to_data: /home/mohamedgabr/NeuralDialectDetector/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
 checkpointing_path: /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline
-model_name_path: /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline/baseline_10  # "bashar-talafha/multi-dialect-bert-base-arabic"
+model_name_path: bashar-talafha/multi-dialect-bert-base-arabic # /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline/baseline_10  # "bashar-talafha/multi-dialect-bert-base-arabic"
 model_class: ArabicDialectBERT # ArabicDialectBERTMaskedLM #   # Or 
 masking_percentage: 0.2 # Applies when training w MLM
 batch_size: 8 # 16 # 64

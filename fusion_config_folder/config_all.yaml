@@ -33,3 +33,5 @@ stage_2_training: false
 use_adapters: true
 warmup_steps: 0
 use_adapt_after_fusion: false
+adapter_type: "Fusion"
+
