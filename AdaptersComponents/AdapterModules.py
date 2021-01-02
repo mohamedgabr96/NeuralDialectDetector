@@ -33,7 +33,7 @@ class FusionAttn(nn.Module):
         self.value = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
         self.T = 1.0
         self.reduction = self.T / 1000.0
-        self.adapter_after_fusion = AdapterModule(config.hidden_size, bottleneck_dim)
+        self.adapter_after_fusion = AdapterModule(config.hidden_size, bottleneck_dim*4)
         self.use_adapter_after_fusion = use_adapt_after_fusion
         
     def forward(self, hidden_states_before, adapters_output, attention_mask=None):

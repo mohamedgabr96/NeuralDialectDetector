@@ -3,6 +3,7 @@ from transformers import AutoModel, PreTrainedModel
 from transformers import BertModel, BertPreTrainedModel, BertForMaskedLM
 from transformers.models.bert.modeling_bert import BertOnlyMLMHead
 from AdaptersComponents.BertLayerAdapter import BertLayer_w_Adapters
+from AdaptersComponents.BertLayerPlainAdapter import BertLayer_w_PlainAdapters
 
 class ClassificationHead(nn.Module):
     def __init__(self, input_dim, num_labels, dropout_rate=0.):
@@ -23,7 +24,10 @@ class ArabicDialectBERT(BertPreTrainedModel):
         self.bert = BertModel(config=config)  # TO-DO: Add adapters function that changes encoder here # Load pretrained bert
         
         if args["use_adapters"]:
-            self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
+            if args["adapter_type"] == "Fusion":
+                self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
+            elif args["adapter_type"] == "plain_adapter":
+                self.bert.encoder.layer = nn.ModuleList([BertLayer_w_PlainAdapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
             for param in self.bert.encoder.layer.named_parameters():
                 if "adapter_layer" not in param[0]:
                     param[1].requires_grad = False

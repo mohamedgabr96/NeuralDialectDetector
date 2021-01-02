@@ -22,12 +22,17 @@ seed_list: [1033, 611, 520, 300, 760]
 one_class_filtration: null # Morocco  # Empty for all classes to use, useful for MLM per dialect adapter
 # seed_list: [760]
 neptuneaiAPI: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsImFwaV91cmwiOiJodHRwczovL3VpLm5lcHR1bmUuYWkiLCJhcGlfa2V5IjoiYzNlOTI4MDUtMWEwMC00N2U3LWEzYTAtZjAyMzA2YzE1YjI3In0=
-neptune_experiment_name: "adapter_fusion_stage_2_trial"
+neptune_experiment_name: "adapter_fusion_stage_2_trial_with_after"
 
 ## Adapter settings
+
+## Settings for all adapts
 use_adapters: true
+adapter_type: "plain_adapter"
 bottleneck_dim: 32
+
+## settings for fusion
 current_adapter_to_train: 6 # We will use same order as classes txt
 no_total_adapters: 20
 stage_2_training: true
-use_adapt_after_fusion: false # applies only with stage 2 training
+use_adapt_after_fusion: true # applies only with stage 2 training
