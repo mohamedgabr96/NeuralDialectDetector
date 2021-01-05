@@ -9,6 +9,7 @@ import os
 import neptune
 import random 
 import model as model_classes
+from torch.optim.lr_scheduler import CyclicLR
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +48,9 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(self.model_name_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"])
+        train_loader, dev_loader, test_loader, no_labels, cls_weights = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"])
         self.configs["num_labels"] = no_labels
+        self.configs["cls_weights"] = cls_weights
 
         # model = AutoModel.from_pretrained(self.model_name_path)
         # Instantiate Model
@@ -72,6 +74,7 @@ class Trainer():
                 }
             ], lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
         scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.configs["warmup_steps"], num_training_steps=total_steps)
+        # scheduler = CyclicLR(optimizer, base_lr=5.e-6, max_lr=5.e-5, step_size_up=657, cycle_momentum=False)
 
         model.zero_grad()
 
@@ -166,6 +169,7 @@ class Trainer():
             model_pathes.append(best_model_path)
             logger.info(f"Training with the seed no {i} ended..")
 
+        dev_accuracy_list = np.array(dev_accuracy_list)
         final_aggregation = np.mean(dev_accuracy_list)
         logger.info(f"Training with multiple seeds ended.. Final aggregation of dev scores {final_aggregation}")
         return np.mean(dev_accuracy_list), model_pathes
@@ -177,7 +181,7 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(model_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"])
+        train_loader, dev_loader, test_loader, no_labels, _ = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"])
         self.configs["num_labels"] = no_labels
 
         # Instantiate Model

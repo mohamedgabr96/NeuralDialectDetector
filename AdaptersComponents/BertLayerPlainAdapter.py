@@ -41,7 +41,8 @@ class AdapterAttention(BertAttention):
 class BertLayer_w_PlainAdapters(BertLayer):
     def __init__(self, config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion):
         super(BertLayer_w_PlainAdapters, self).__init__(config)
-        self.attention = AdapterAttention(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion)
+        # self.attention = AdapterAttention(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion)
+        self.attention = BertAttention(config)
         self.is_decoder = config.is_decoder
         if self.is_decoder:
             self.crossattention = AdapterAttention(config, bottleneck_dim, current_adapter_to_train, no_total_adapters, stage_2_training, use_adapt_after_fusion)

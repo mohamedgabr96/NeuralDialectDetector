@@ -10,11 +10,13 @@ class AdapterModule(nn.Module):
         self.down_project = nn.Linear(hidden_size, bottleneck_dim)
         self.up_project = nn.Linear(bottleneck_dim, hidden_size)
         self.non_linearity = nn.GELU()
+        self.dropout = nn.Dropout(0.2)
 
     def forward(self, x):
         down_projection = self.down_project(x)
         non_linearity = self.non_linearity(down_projection)
         up_projection = self.up_project(non_linearity)
+        #up_projection = self.dropout(up_projection)
 
         return up_projection
 
@@ -33,7 +35,7 @@ class FusionAttn(nn.Module):
         self.value = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
         self.T = 1.0
         self.reduction = self.T / 1000.0
-        self.adapter_after_fusion = AdapterModule(config.hidden_size, bottleneck_dim*4)
+        self.adapter_after_fusion = AdapterModule(config.hidden_size, bottleneck_dim)
         self.use_adapter_after_fusion = use_adapt_after_fusion
         
     def forward(self, hidden_states_before, adapters_output, attention_mask=None):
@@ -97,4 +99,3 @@ class AdapterFusionModule(nn.Module):
 
             final_hidden_states = self.adapter_fusion_attention_layer(hidden_states, adapters_output)
             return final_hidden_states
-

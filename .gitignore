@@ -1,6 +1,6 @@
 NADI2021_DEV.1.0
 config_linux.yaml
-checkpoints
+checkpoints*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

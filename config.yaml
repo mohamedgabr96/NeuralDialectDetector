@@ -1,24 +1,25 @@
-run_title: classification_run_3
+run_title: classification_run_8
 path_to_data: NADI2021_DEV.1.0/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
 checkpointing_path: checkpoints
-model_name_path: checkpoints/adapter_fusion_Libya  # "bashar-talafha/multi-dialect-bert-base-arabic"
+model_name_path: checkpoints/adapter_fusion_Libya
+  #checkpoints/adapter_bert_arabic_w_pretrainedfusionstuff-20210105T124954Z-001/adapter_bert_arabic_w_pretrainedfusionstuff
 model_class: ArabicDialectBERT # ArabicDialectBERTMaskedLM #   # Or 
 masking_percentage: 0.2 # Applies when training w MLM
-batch_size: 8 # 64
-classif_dropout_rate: 0.1
-initial_learning_rate: 8.e-5 # 2.75e-4
+batch_size: 32 # 64
+classif_dropout_rate: 0.3
+initial_learning_rate: 5.e-5
 adam_epsilon: 1.0e-08
-warmup_steps: 0
+warmup_steps: 500
 num_epochs: 100 # 30 # 10
 early_stopping: true
-early_stopping_patience: 20
+early_stopping_patience: 10
 device: cuda # Choose between cpu and cuda
 save_final_model: true
 checkpointing_on: false
 checkpointing_freq: 20 # Needs the argument above to be true
 checkpoint_on_improvement: true
-improvement_check_freq: 2600 # Needs the argument above to be true
-seed_list: [1033, 611, 520, 300, 760]
+improvement_check_freq: 657 #1313 # Needs the argument above to be true
+seed_list: [611, 520, 300, 760, 42, 1111, 1234, 10, 1, 20, 5, 2, 100, 512]
 one_class_filtration: null # Morocco  # Empty for all classes to use, useful for MLM per dialect adapter
 # seed_list: [760]
 neptuneaiAPI: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsImFwaV91cmwiOiJodHRwczovL3VpLm5lcHR1bmUuYWkiLCJhcGlfa2V5IjoiYzNlOTI4MDUtMWEwMC00N2U3LWEzYTAtZjAyMzA2YzE1YjI3In0=
@@ -28,8 +29,8 @@ neptune_experiment_name: "adapter_fusion_stage_2_trial_with_after"
 
 ## Settings for all adapts
 use_adapters: true
-adapter_type: "plain_adapter"
-bottleneck_dim: 32
+adapter_type: Fusion
+bottleneck_dim: 384
 
 ## settings for fusion
 current_adapter_to_train: 6 # We will use same order as classes txt

@@ -32,6 +32,17 @@ def parse_classes_list(path_to_folder):
         lines = file_open.readlines()
     return [line.strip("\n") for line in lines]
 
+def parse_classes_w_weights_list(path_to_folder):
+    classes_path = os.path.join(path_to_folder, "classes_w_weights.txt")
+    labels, weights = [], []
+    with open(classes_path, encoding="utf-8") as file_open:
+        lines = file_open.readlines()
+    for line in lines:
+        c, w = line.strip("\n").split("\t")
+        labels += [c]
+        weights += [float(w)]
+    return labels, weights
+
 
 def parse_data(path_to_file, separator="\t", class_to_filter=None):
     with open(path_to_file, encoding="utf-8") as file_open:
@@ -53,12 +64,13 @@ def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_li
 
 def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, masking_percentage=0.2, class_to_filter=None):
     params = {'batch_size': batch_size}
+    weights = None 
     classes_list = parse_classes_list(path_to_data_folder) if class_to_filter is None else [class_to_filter]
     training_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
-    dev_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, {'batch_size': 1}, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
+    dev_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, {'batch_size': 16}, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
     test_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
 
-    return training_generator, dev_generator, test_generator, len(classes_list)
+    return training_generator, dev_generator, test_generator, len(classes_list), weights
 
 # From : https://github.com/monologg/JointBERT/blob/master/predict.py
 def load_and_cache_examples(examples, tokenizer, classes_list, pad_token_ignore_index=0, max_seq_len=128, masking_percentage=0.2):

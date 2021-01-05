@@ -1,7 +1,8 @@
+import torch 
 import torch.nn as nn
 from transformers import AutoModel, PreTrainedModel
 from transformers import BertModel, BertPreTrainedModel, BertForMaskedLM
-from transformers.models.bert.modeling_bert import BertOnlyMLMHead
+from transformers.models.bert.modeling_bert import BertOnlyMLMHead, BertLayer
 from AdaptersComponents.BertLayerAdapter import BertLayer_w_Adapters
 from AdaptersComponents.BertLayerPlainAdapter import BertLayer_w_PlainAdapters
 
@@ -25,19 +26,24 @@ class ArabicDialectBERT(BertPreTrainedModel):
         
         if args["use_adapters"]:
             if args["adapter_type"] == "Fusion":
-                self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
+                # self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
+                self.bert.encoder.layer = nn.ModuleList([BertLayer(config) for _ in range(11)] + [BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(1)])
             elif args["adapter_type"] == "plain_adapter":
-                self.bert.encoder.layer = nn.ModuleList([BertLayer_w_PlainAdapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
+                # self.bert.encoder.layer = nn.ModuleList([BertLayer_w_PlainAdapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
+                self.bert.encoder.layer = nn.ModuleList([BertLayer(config) for _ in range(11)] + [BertLayer_w_PlainAdapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(1)])
             for param in self.bert.encoder.layer.named_parameters():
                 if "adapter_layer" not in param[0]:
                     param[1].requires_grad = False
+                else:
+                    print(param[0])
             # Freeze all except adapters and head
 
+        # self.loss_function = nn.CrossEntropyLoss(weight=torch.tensor(self.args["cls_weights"]))
+        self.loss_function = nn.CrossEntropyLoss()
         self.classif_head = ClassificationHead(config.hidden_size, self.num_labels, args["classif_dropout_rate"])
 
     def forward(self, input_ids, attention_mask, token_type_ids, class_label_ids, input_ids_masked):
-        outputs = self.bert(input_ids, attention_mask=attention_mask,
-                            token_type_ids=token_type_ids)  # sequence_output, pooled_output, (hidden_states), (attentions)
+        outputs = self.bert(input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)  # sequence_output, pooled_output, (hidden_states), (attentions)
         sequence_output = outputs[0]  # Not needed for now
         pooled_output = outputs[1]  # [CLS]
 
@@ -50,8 +56,7 @@ class ArabicDialectBERT(BertPreTrainedModel):
                 loss_function = nn.MSELoss()
                 temp_loss = loss_function(logits.view(-1), class_label_ids.view(-1))
             else:
-                loss_function = nn.CrossEntropyLoss()
-                temp_loss = loss_function(logits.view(-1, self.num_labels), class_label_ids.view(-1))
+                temp_loss = self.loss_function(logits.view(-1, self.num_labels), class_label_ids.view(-1))
             total_loss += temp_loss  
 
         outputs = ((logits, ),) + outputs[2:]  # add hidden states and attention if they are here
@@ -60,7 +65,6 @@ class ArabicDialectBERT(BertPreTrainedModel):
 
         return outputs  # (loss), logits, (hidden_states), (attentions) # Logits is a tuple of intent and slot logits
 
-
 class ArabicDialectBERTMaskedLM(BertForMaskedLM):
     def __init__(self, config, args):
         super(ArabicDialectBERTMaskedLM, self).__init__(config)
@@ -68,7 +72,8 @@ class ArabicDialectBERTMaskedLM(BertForMaskedLM):
         self.bert = BertModel(config, add_pooling_layer=False)
 
         if args["use_adapters"]:
-            self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
+            # self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
+            self.bert.encoder.layer = nn.ModuleList([BertLayer(config) for _ in range(11)] + [BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(1)])
             for param in self.bert.encoder.layer.named_parameters():
                 if "adapter_layer" not in param[0]:
                     param[1].requires_grad = False
