@@ -47,6 +47,14 @@ def save_json(path_to_file, content):
         json.dump(content, ff)
 
 
+def dump_predictions(sentence_index, predictions, labels, path_to_save_folder):
+    with open(path_to_save_folder, encoding="utf-8", mode="w") as file_open:
+        file_open.write("Sentence Index\tPredictions\tLabels")
+        for index in range(len(sentence_index)):
+            file_open.write(sentence_index[index] + "\t" + predictions[index] + "\t" + labels[index] + "\n")
+
+
+
 def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu"):
     model.eval()
     no_batches = tqdm(evaluation_loader, desc="Batch Evaluation Loop")
