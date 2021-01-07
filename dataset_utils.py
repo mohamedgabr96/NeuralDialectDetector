@@ -44,33 +44,53 @@ def parse_classes_w_weights_list(path_to_folder):
     return labels, weights
 
 
-def parse_data(path_to_file, separator="\t", class_to_filter=None):
+def parse_mapping_list(path_to_folder):
+    mapping_path = os.path.join(path_to_folder, "regional_mapping.txt")
+    if not os.path.exists(mapping_path):
+        return None
+    with open(mapping_path, encoding="utf-8") as file_opened:
+        lines = file_opened.readlines()
+    lines = [line.strip("\n").split(",") for line in lines]
+    return {key: value for key, value in lines}
+
+
+def parse_data(path_to_file, separator="\t", regional_mapping_content=None, class_to_filter=None):
     with open(path_to_file, encoding="utf-8") as file_open:
         lines = file_open.readlines()
   
     lines_split = [line.split("\t")[1:3] for line in lines[1:]]
+    
+
+    if regional_mapping_content is not None:
+        lines_split = [(x[0], regional_mapping_content[x[1]]) for x in lines_split]
+
     if class_to_filter is not None:
-        lines_split = [x for x in lines_split if x[1]==class_to_filter]
+        lines_split = [x for x in lines_split if x[1] in class_to_filter]
+
     return lines_split
 
 
-def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", random_sampler=True, masking_percentage=0.2, class_to_filter=None):
-    data_examples = parse_data(os.path.join(path_to_data_folder, f"DA_{split_set}_labeled.tsv"), class_to_filter=class_to_filter)
+def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", random_sampler=True, masking_percentage=0.2, class_to_filter=None, regional_mapping=None):
+    data_examples = parse_data(os.path.join(path_to_data_folder, f"DA_{split_set}_labeled.tsv"), regional_mapping_content=regional_mapping, class_to_filter=class_to_filter)
     dataset = load_and_cache_examples(data_examples, tokenizer, classes_list, masking_percentage=masking_percentage)
     data_sampler = RandomSampler(dataset) if random_sampler else None
     generator = torch.utils.data.DataLoader(dataset, shuffle=not random_sampler, sampler=data_sampler, **params)
     return generator
 
 
-def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, masking_percentage=0.2, class_to_filter=None):
+def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, masking_percentage=0.2, class_to_filter=None, regional_mapping=None):
     params = {'batch_size': batch_size}
-    weights = None 
-    classes_list = parse_classes_list(path_to_data_folder) if class_to_filter is None else [class_to_filter]
-    training_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
-    dev_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, {'batch_size': 16}, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
-    test_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter)
+    regional_mapping_content = parse_mapping_list(path_to_data_folder)
+    if regional_mapping_content is not None:
+        classes_list = list(set(regional_mapping_content.values()))
+        classes_list.sort()
+    else:
+        classes_list = parse_classes_list(path_to_data_folder) if class_to_filter is None else [class_to_filter]
+    training_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content)
+    dev_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content)
+    test_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content)
 
-    return training_generator, dev_generator, test_generator, len(classes_list), weights
+    return training_generator, dev_generator, test_generator, len(classes_list), None
 
 # From : https://github.com/monologg/JointBERT/blob/master/predict.py
 def load_and_cache_examples(examples, tokenizer, classes_list, pad_token_ignore_index=0, max_seq_len=128, masking_percentage=0.2):
@@ -86,9 +106,10 @@ def load_and_cache_examples(examples, tokenizer, classes_list, pad_token_ignore_
     all_token_type_ids = torch.tensor([f[2] for f in features], dtype=torch.long)
     all_class_label_ids = torch.tensor([f[3] for f in features], dtype=torch.long)
     all_input_ids_w_masking = torch.tensor([f[4] for f in features], dtype=torch.long)
-
+    all_sentence_indices = torch.tensor([f[5] for f in features], dtype=torch.long)
+    
     dataset = TensorDataset(all_input_ids, all_attention_mask,
-                            all_token_type_ids, all_class_label_ids, all_input_ids_w_masking)
+                            all_token_type_ids, all_class_label_ids, all_input_ids_w_masking, all_sentence_indices)
     return dataset
 
 
@@ -180,7 +201,8 @@ def convert_examples_to_features(examples, classes_list, max_seq_len,
                           attention_mask,
                           token_type_ids,
                           class_label_id,
-                          input_ids_w_masking
+                          input_ids_w_masking,
+                          ex_index
                           ))
 
     return features

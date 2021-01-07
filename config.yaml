@@ -16,7 +16,7 @@ early_stopping_patience: 10
 device: cuda # Choose between cpu and cuda
 save_final_model: true
 checkpointing_on: false
-checkpointing_freq: 20 # Needs the argument above to be true
+checkpointing_freq: 1 # Needs the argument above to be true
 checkpoint_on_improvement: true
 improvement_check_freq: 657 #1313 # Needs the argument above to be true
 seed_list: [611, 520, 300, 760, 42, 1111, 1234, 10, 1, 20, 5, 2, 100, 512]
