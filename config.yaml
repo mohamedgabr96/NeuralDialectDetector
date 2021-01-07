@@ -19,7 +19,7 @@ checkpointing_freq: 1 # Needs the argument above to be true
 checkpoint_on_improvement: true
 improvement_check_freq: 1 # 10 # Needs the argument above to be true
 seed_list: [1033, 611, 520, 300, 760]
-one_class_filtration: null # Morocco  # Empty for all classes to use, useful for MLM per dialect adapter
+one_class_filtration: null # [Morocco]  # #PRovide list of final  # Empty for all classes to use, useful for MLM per dialect adapter
 # seed_list: [760]
 neptuneaiAPI: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsImFwaV91cmwiOiJodHRwczovL3VpLm5lcHR1bmUuYWkiLCJhcGlfa2V5IjoiYzNlOTI4MDUtMWEwMC00N2U3LWEzYTAtZjAyMzA2YzE1YjI3In0=
 neptune_experiment_name: "adapter_fusion_stage_2_trial_with_after"

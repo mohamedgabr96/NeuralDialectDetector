@@ -48,11 +48,13 @@ def parse_data(path_to_file, separator="\t", regional_mapping_content=None, clas
         lines = file_open.readlines()
   
     lines_split = [line.split("\t")[1:3] for line in lines[1:]]
-    if class_to_filter is not None:
-        lines_split = [x for x in lines_split if x[1]==class_to_filter]
+    
 
     if regional_mapping_content is not None:
         lines_split = [(x[0], regional_mapping_content[x[1]]) for x in lines_split]
+
+    if class_to_filter is not None:
+        lines_split = [x for x in lines_split if x[1] in class_to_filter]
 
     return lines_split
 
@@ -93,9 +95,10 @@ def load_and_cache_examples(examples, tokenizer, classes_list, pad_token_ignore_
     all_token_type_ids = torch.tensor([f[2] for f in features], dtype=torch.long)
     all_class_label_ids = torch.tensor([f[3] for f in features], dtype=torch.long)
     all_input_ids_w_masking = torch.tensor([f[4] for f in features], dtype=torch.long)
-
+    all_sentence_indices = torch.tensor([f[5] for f in features], dtype=torch.long)
+    
     dataset = TensorDataset(all_input_ids, all_attention_mask,
-                            all_token_type_ids, all_class_label_ids, all_input_ids_w_masking)
+                            all_token_type_ids, all_class_label_ids, all_input_ids_w_masking, all_sentence_indices)
     return dataset
 
 
@@ -187,7 +190,8 @@ def convert_examples_to_features(examples, classes_list, max_seq_len,
                           attention_mask,
                           token_type_ids,
                           class_label_id,
-                          input_ids_w_masking
+                          input_ids_w_masking,
+                          ex_index
                           ))
 
     return features

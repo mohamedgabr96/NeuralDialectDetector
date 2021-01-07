@@ -52,12 +52,13 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
     no_batches = tqdm(evaluation_loader, desc="Batch Evaluation Loop")
     final_eval_loss, correct = 0, 0
     total_no_steps, num_samples = 0, 0
+    list_of_sentence_ids = []
     for batch in no_batches:
         batch = [x.to(device) for x in batch]
         outputs = model(input_ids=batch[0], attention_mask=batch[1], token_type_ids=batch[2], class_label_ids=batch[3], input_ids_masked=batch[4])
         eval_loss, (logits,) = outputs[:2]
         final_eval_loss += eval_loss.mean().item()
-                 
+        list_of_sentence_ids = np.concatenate(list_of_sentence_ids, batch[5].cpu().detach().numpy())  
         total_no_steps += 1
 
         if model_class_name == "ArabicDialectBERT":
