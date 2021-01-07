@@ -6,6 +6,8 @@ import numpy as np
 import json
 import uuid
 
+from sklearn.metrics import f1_score
+
 
 def read_yaml_file(file_path):
     with open(file_path, encoding="utf-8") as file_open:
@@ -61,6 +63,7 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
     final_eval_loss, correct = 0, 0
     total_no_steps, num_samples = 0, 0
     list_of_sentence_ids = []
+    preds, g_truths = [], []
     for batch in no_batches:
         batch = [x.to(device) for x in batch]
         outputs = model(input_ids=batch[0], attention_mask=batch[1], token_type_ids=batch[2], class_label_ids=batch[3], input_ids_masked=batch[4])
@@ -71,15 +74,21 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
 
         if model_class_name == "ArabicDialectBERT":
             label_ids = logits.argmax(axis=1)
+            g_truths.extend(batch[3].detach().cpu().numpy())
+            preds.extend(label_ids.detach().cpu().numpy())
             correct += (label_ids == batch[3]).sum()
             num_samples += label_ids.size(0)
     
     if model_class_name == "ArabicDialectBERT":
         accuracy = correct / float(num_samples)
         accuracy = accuracy.item()
+        y_true = np.array(g_truths)
+        y_pred = np.array(preds)
+        f1 = f1_score(y_true, y_pred, average="macro")
     else:
+        f1 = 0 
         accuracy = 0
         
     eval_loss = final_eval_loss / total_no_steps
 
-    return accuracy, eval_loss
+    return f1, accuracy, eval_loss

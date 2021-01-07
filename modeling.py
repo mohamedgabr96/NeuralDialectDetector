@@ -62,6 +62,7 @@ class Trainer():
 
         # Initialize Optimizers
         if self.configs["model_class"] == "ArabicDialectBERTMaskedLM":
+            model.init_cls_weights()
             optimizer = AdamW(model.parameters(), lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
         else:
             optimizer = AdamW([
@@ -70,7 +71,7 @@ class Trainer():
                 },
                 {
                     'params': model.classif_head.parameters(),
-                    'lr': 1.e-3
+                    'lr': 5.e-5
                 }
             ], lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
         scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.configs["warmup_steps"], num_training_steps=total_steps)
@@ -113,9 +114,10 @@ class Trainer():
                 global_step += 1
 
                 if global_step % self.configs["improvement_check_freq"] == 0:
-                    dev_accuracy, curr_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
+                    dev_f1, dev_accuracy, curr_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
                     neptune.log_metric('dev_loss', x=global_step, y=curr_dev_loss)
                     neptune.log_metric('dev_accuracy', x=global_step, y=dev_accuracy)
+                    neptune.log_metric('dev_f1', x=global_step, y=dev_f1)
                     early_stop_count_patience += 1
 
                 if self.configs["early_stopping"] and early_stop_count_patience > self.configs["early_stopping_patience"]:
@@ -139,11 +141,12 @@ class Trainer():
 
         # Final Evaluation Loop
 
-        final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
-        final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"])
+        final_dev_f1, final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
+        final_test_f1, final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"])
 
         neptune.log_metric('dev_loss', x=global_step, y=final_dev_loss)
         neptune.log_metric('dev_accuracy', x=global_step, y=final_dev_accuracy)
+        neptune.log_metric('dev_f1', x=global_step, y=final_dev_f1)
 
         # Final Model Saving
         if self.configs["save_final_model"]:
@@ -226,7 +229,11 @@ class Trainer():
 
 
 if __name__ == "__main__":
-    trainer_class = Trainer()
+
+    import sys
+    config_file_path = sys.argv[1]
+
+    trainer_class = Trainer(config_file_path=config_file_path)
     # trainer_class.train()
     # trainer_class.train_with_multiple_seeds(3)
     trainer_class.train_and_evaluate_with_multiple_seeds(1, seeds_from_config=True)

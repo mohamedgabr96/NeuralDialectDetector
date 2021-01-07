@@ -22,7 +22,7 @@ prev_model_name = "checkpoints/adapter_bert_arabic_w_pretrainedfusionstuff-20210
 for index, country in enumerate(countries_list):
     config_file_open["one_class_filtration"] = country
     config_file_open["current_adapter_to_train"] = index
-    config_file_open["neptune_experiment_name"] = f"adapter_fusion_stage_1_{country}"
+    config_file_open["neptune_experiment_name"] = f"{country}_adapter_fusion_stage_1"
     config_file_open["model_name_path"] = prev_model_name
     config_file_open["run_title"] = f"adapter_fusion_{country}"
     prev_model_name = os.path.join(config_file_open["checkpointing_path"], f"adapter_fusion_{country}")
@@ -31,7 +31,10 @@ for index, country in enumerate(countries_list):
     save_yaml_file(config_file_open, config_file_path)
 
     ## Run
-    from modeling import Trainer
-    temp_trainer_class = Trainer(config_file_path=config_file_path)
-    temp_trainer_class.train_and_evaluate_with_multiple_seeds(1, seeds_from_config=True)
-    del temp_trainer_class
+    # from modeling import Trainer
+    # temp_trainer_class = Trainer(config_file_path=config_file_path)
+    # temp_trainer_class.train_and_evaluate_with_multiple_seeds(1, seeds_from_config=True)
+    # del temp_trainer_class
+
+    command = f"python modeling.py {config_file_path}"
+    os.system(command)

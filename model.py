@@ -32,7 +32,7 @@ class ArabicDialectBERT(BertPreTrainedModel):
                 # self.bert.encoder.layer = nn.ModuleList([BertLayer_w_PlainAdapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
                 self.bert.encoder.layer = nn.ModuleList([BertLayer(config) for _ in range(11)] + [BertLayer_w_PlainAdapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(1)])
             for param in self.bert.encoder.layer.named_parameters():
-                if "adapter_layer" not in param[0]:
+                if "adapter_layer" not in param[0] or "list_of_adapter_modules" in param[0]:
                     param[1].requires_grad = False
                 else:
                     print(param[0])
@@ -84,6 +84,11 @@ class ArabicDialectBERTMaskedLM(BertForMaskedLM):
 
         self.cls = BertOnlyMLMHead(config)
         self.init_weights()
+
+    def init_cls_weights(self):
+        self._init_weights(self.cls.predictions.transform.dense)
+        self._init_weights(self.cls.predictions.transform.LayerNorm)
+        self._init_weights(self.cls.predictions.decoder)
 
     def forward(self, input_ids, attention_mask, token_type_ids, class_label_ids, input_ids_masked):
 
