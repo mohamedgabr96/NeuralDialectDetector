@@ -1,8 +1,8 @@
 run_title: baseline_111
-path_to_data: /home/mohamedgabr/NeuralDialectDetector/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
-checkpointing_path: /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline
-model_name_path: /home/mohamedgabr/NeuralDialectDetector/model_w_adapters # bashar-talafha/multi-dialect-bert-base-arabic # /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline/baseline_10  # "bashar-talafha/multi-dialect-bert-base-arabic"
-model_class: ArabicDialectBERT # ArabicDialectBERTMaskedLM #   # Or 
+path_to_data: /Users/mohamedgabr/Downloads/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA # /home/mohamedgabr/Documents/NeuralDialectDetector/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
+checkpointing_path: /Users/mohamedgabr/Documents/NeuralDialectDetector/checkpoints_baseline
+model_name_path: /Users/mohamedgabr/Documents/NeuralDialectDetector/pytorch_model_fusion # bashar-talafha/multi-dialect-bert-base-arabic # /home/mohamedgabr/NeuralDialectDetector/model_w_adapters # bashar-talafha/multi-dialect-bert-base-arabic # /home/mohamedgabr/NeuralDialectDetector/checkpoints_baseline/baseline_10  # "bashar-talafha/multi-dialect-bert-base-arabic"
+model_class: ArabicDialectBERT # ArabicDialectBERTMaskedLM #  #  #   # Or 
 masking_percentage: 0.2 # Applies when training w MLM
 batch_size: 8 # 16 # 64
 classif_dropout_rate: 0.1
@@ -11,13 +11,13 @@ adam_epsilon: 1.0e-08
 warmup_steps: 0
 num_epochs: 100 # 30 # 10
 early_stopping: true
-early_stopping_patience: 20
-device: cuda # Choose between cpu and cuda
+early_stopping_patience: 1 #  20
+device: cpu # Choose between cpu and cuda
 save_final_model: true
 checkpointing_on: false
-checkpointing_freq: 20 # Needs the argument above to be true
+checkpointing_freq: 1 # Needs the argument above to be true
 checkpoint_on_improvement: true
-improvement_check_freq: 10 # Needs the argument above to be true
+improvement_check_freq: 1 # 10 # Needs the argument above to be true
 seed_list: [1033, 611, 520, 300, 760]
 one_class_filtration: null # Morocco  # Empty for all classes to use, useful for MLM per dialect adapter
 # seed_list: [760]
@@ -28,11 +28,11 @@ neptune_experiment_name: "adapter_fusion_stage_2_trial_with_after"
 
 ## Settings for all adapts
 use_adapters: true
-adapter_type: "plain_adapter"
+adapter_type: "Fusion"  # "plain_adapter"
 bottleneck_dim: 384
 
 ## settings for fusion
 current_adapter_to_train: 6 # We will use same order as classes txt
-no_total_adapters: 20
+no_total_adapters: 21
 stage_2_training: true
 use_adapt_after_fusion: true # applies only with stage 2 training
