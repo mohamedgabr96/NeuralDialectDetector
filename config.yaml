@@ -1,11 +1,12 @@
-run_title: Levantine
+run_title: MARBaseline
 path_to_data: NADI2021_DEV.1.0/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
-checkpointing_path: checkpoints_regions
+checkpointing_path: checkpoints_marbert
 # model_name_path: checkpoints_4/adapter_fusion_Libya
 # model_name_path: checkpoints/adapter_bert_arabic_w_pretrainedfusionstuff-20210105T124954Z-001/adapter_bert_arabic_w_pretrainedfusionstuff
 # model_name_path: checkpoints_regions/RegionClassifier
-model_name_path: checkpoints_regions/Levantine
+# model_name_path: checkpoints_regions/Levantine
 # model_name_path: checkpoints/ArabicBERTBaselineAdapters_ALL_Regional2
+model_name_path: UBC-NLP/MARBERT
 model_class: ArabicDialectBERT # ArabicDialectBERTMaskedLM #   # Or 
 masking_percentage: 0.2 # Applies when training w MLM
 batch_size: 32 # 64
@@ -21,12 +22,14 @@ save_final_model: true
 checkpointing_on: false
 checkpointing_freq: 1 # Needs the argument above to be true
 checkpoint_on_improvement: true
-improvement_check_freq: 40 #1313 # Needs the argument above to be true
+improvement_check_freq: 657 #1313 # Needs the argument above to be true
 seed_list: [611, 520, 300, 760, 42, 1111, 1234, 10, 1, 20, 5, 2, 100, 512]
 # one_class_filtration: null
-indexes_filtration_path: "checkpoints_regions/RegionClassifier"
-class_index: 2
-one_class_filtration: ["Lebanon", "Jordan", "Palestine", "Syria"] # 2
+# indexes_filtration_path: "checkpoints_regions/RegionClassifier"
+indexes_filtration_path: null
+class_index: -1
+one_class_filtration: null
+# one_class_filtration: ["Lebanon", "Jordan", "Palestine", "Syria"] # 2
 # one_class_filtration: ["Kuwait", "Oman", "United_Arab_Emirates", "Saudi_Arabia", "Bahrain", "Yemen", "Qatar"] #  0
 # one_class_filtration: ["Egypt", "Sudan"] # 1
 # one_class_filtration: ["Tunisia", "Libya", "Algeria", "Morocco"] # 3
