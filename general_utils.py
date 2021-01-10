@@ -32,9 +32,10 @@ def save_model(model, tokenizer, path, used_config, step_no, current_dev_score=0
     return final_path
 
 
-def update_dict_of_agg(agg_dict, new_dict):
-    agg_dict["TRAIN"]["Accuracy"].append(new_dict["TRAIN"]["Accuracy"])
-    agg_dict["TRAIN"]["Loss"].append(new_dict["TRAIN"]["Loss"])
+def update_dict_of_agg(agg_dict, new_dict, eval_on_train=True):
+    if eval_on_train:
+        agg_dict["TRAIN"]["Accuracy"].append(new_dict["TRAIN"]["Accuracy"])
+        agg_dict["TRAIN"]["Loss"].append(new_dict["TRAIN"]["Loss"])
 
     agg_dict["DEV"]["Accuracy"].append(new_dict["DEV"]["Accuracy"])
     agg_dict["DEV"]["Loss"].append(new_dict["DEV"]["Loss"])
@@ -73,7 +74,7 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
         total_no_steps += 1
 
         if model_class_name == "ArabicDialectBERT":
-            logits_list.extend(torch.nn.functional.softmax(logits).detach().cpu().numpy())
+            logits_list.extend(torch.nn.functional.softmax(logits, dim=-1).detach().cpu().numpy())
             label_ids = logits.argmax(axis=1)
             g_truths.extend(batch[3].detach().cpu().numpy())
             preds.extend(label_ids.detach().cpu().numpy())
