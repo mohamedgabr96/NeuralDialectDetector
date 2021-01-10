@@ -9,15 +9,15 @@ checkpointing_path: checkpoints_marbert
 model_name_path: UBC-NLP/MARBERT
 model_class: ArabicDialectBERT # ArabicDialectBERTMaskedLM #   # Or 
 masking_percentage: 0.2 # Applies when training w MLM
-batch_size: 32 # 64
+batch_size: 4 # 32 # 64
 classif_dropout_rate: 0.3
 initial_learning_rate: 5.e-5
 adam_epsilon: 1.0e-08
 warmup_steps: 500
-num_epochs: 0 # 30 # 10
+num_epochs: 0 # 0 # 30 # 10
 early_stopping: true
 early_stopping_patience: 10
-device: cuda # Choose between cpu and cuda
+device: cpu # cuda # Choose between cpu and cuda
 save_final_model: true
 checkpointing_on: false
 checkpointing_freq: 1 # Needs the argument above to be true
