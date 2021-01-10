@@ -49,11 +49,11 @@ def save_json(path_to_file, content):
         json.dump(content, ff)
 
 
-def dump_predictions(sentence_index, predictions, labels, path_to_save_folder):
+def dump_predictions(sentence_index, soft_max_vals, predictions, labels, path_to_save_folder):
     with open(path_to_save_folder, encoding="utf-8", mode="w") as file_open:
-        file_open.write("Sentence Index\tPredictions\tLabels\n\n")
+        file_open.write("Sentence Index\tSoftMaxes\tPredictions\tLabels\n\n")
         for index in range(len(sentence_index)):
-            file_open.write(str(sentence_index[index]) + "\t" + str(predictions[index]) + "\t" + str(labels[index]) + "\n")
+            file_open.write(str(sentence_index[index]) + "\t" + str(soft_max_vals[index]) + "\t" + str(predictions[index]) + "\t" + str(labels[index]) + "\n")
 
 
 
@@ -63,6 +63,7 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
     final_eval_loss, correct = 0, 0
     total_no_steps, num_samples = 0, 0
     preds, g_truths, list_of_sentence_ids = [], [], []
+    logits_list = []
     for batch in no_batches:
         batch = [x.to(device) for x in batch]
         label_ids_in = batch[3] if not isTest else None
@@ -72,6 +73,7 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
         total_no_steps += 1
 
         if model_class_name == "ArabicDialectBERT":
+            logits_list.extend(torch.nn.functional.softmax(logits).detach().cpu().numpy())
             label_ids = logits.argmax(axis=1)
             g_truths.extend(batch[3].detach().cpu().numpy())
             preds.extend(label_ids.detach().cpu().numpy())
@@ -92,6 +94,6 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
     eval_loss = final_eval_loss / total_no_steps
 
     if return_pred_lists:
-        return f1, accuracy, eval_loss, y_true, y_pred, list_of_sentence_ids
+        return f1, accuracy, eval_loss, y_true, y_pred, list_of_sentence_ids, logits_list
 
     return f1, accuracy, eval_loss
