@@ -51,31 +51,31 @@ def save_json(path_to_file, content):
 
 def dump_predictions(sentence_index, predictions, labels, path_to_save_folder):
     with open(path_to_save_folder, encoding="utf-8", mode="w") as file_open:
-        file_open.write("Sentence Index\tPredictions\tLabels")
+        file_open.write("Sentence Index\tPredictions\tLabels\n\n")
         for index in range(len(sentence_index)):
-            file_open.write(sentence_index[index] + "\t" + predictions[index] + "\t" + labels[index] + "\n")
+            file_open.write(str(sentence_index[index]) + "\t" + str(predictions[index]) + "\t" + str(labels[index]) + "\n")
 
 
 
-def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu"):
+def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu", return_pred_lists=False, isTest=False):
     model.eval()
     no_batches = tqdm(evaluation_loader, desc="Batch Evaluation Loop")
     final_eval_loss, correct = 0, 0
     total_no_steps, num_samples = 0, 0
-    list_of_sentence_ids = []
-    preds, g_truths = [], []
+    preds, g_truths, list_of_sentence_ids = [], [], []
     for batch in no_batches:
         batch = [x.to(device) for x in batch]
-        outputs = model(input_ids=batch[0], attention_mask=batch[1], token_type_ids=batch[2], class_label_ids=batch[3], input_ids_masked=batch[4])
+        label_ids_in = batch[3] if not isTest else None
+        outputs = model(input_ids=batch[0], attention_mask=batch[1], token_type_ids=batch[2], class_label_ids=label_ids_in, input_ids_masked=batch[4])
         eval_loss, (logits,) = outputs[:2]
-        final_eval_loss += eval_loss.mean().item()
-        list_of_sentence_ids = np.concatenate(list_of_sentence_ids, batch[5].cpu().detach().numpy())  
+        final_eval_loss += eval_loss.mean().item() if not isTest else 0
         total_no_steps += 1
 
         if model_class_name == "ArabicDialectBERT":
             label_ids = logits.argmax(axis=1)
             g_truths.extend(batch[3].detach().cpu().numpy())
             preds.extend(label_ids.detach().cpu().numpy())
+            list_of_sentence_ids.extend(batch[5].detach().cpu().numpy())
             correct += (label_ids == batch[3]).sum()
             num_samples += label_ids.size(0)
     
@@ -90,5 +90,8 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
         accuracy = 0
         
     eval_loss = final_eval_loss / total_no_steps
+
+    if return_pred_lists:
+        return f1, accuracy, eval_loss, y_true, y_pred, list_of_sentence_ids
 
     return f1, accuracy, eval_loss

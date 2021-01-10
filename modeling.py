@@ -1,6 +1,7 @@
+from sklearn.utils.validation import check_is_fitted
 from transformers import AutoTokenizer, AutoModel, AutoConfig, AdamW, get_linear_schedule_with_warmup
 from dataset_utils import parse_and_generate_loaders
-from general_utils import read_yaml_file, save_model, evaluate_predictions, update_dict_of_agg, save_json
+from general_utils import read_yaml_file, save_model, evaluate_predictions, update_dict_of_agg, save_json, dump_predictions
 import logging
 import torch
 from tqdm import tqdm, trange
@@ -48,7 +49,7 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(self.model_name_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels, cls_weights = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"])
+        train_loader, dev_loader, test_loader, no_labels, cls_weights = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"])
         self.configs["num_labels"] = no_labels
         self.configs["cls_weights"] = cls_weights
 
@@ -87,6 +88,8 @@ class Trainer():
         training_loss = 0.0
         best_dev_loss = np.inf
         curr_dev_loss = np.inf
+        best_dev_f1 = 0
+        curr_dev_f1 = 0
         early_stop_count_patience = 0
         to_early_stop = False
         for _ in no_epochs:
@@ -114,10 +117,10 @@ class Trainer():
                 global_step += 1
 
                 if global_step % self.configs["improvement_check_freq"] == 0:
-                    dev_f1, dev_accuracy, curr_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
+                    curr_dev_f1, dev_accuracy, curr_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
                     neptune.log_metric('dev_loss', x=global_step, y=curr_dev_loss)
                     neptune.log_metric('dev_accuracy', x=global_step, y=dev_accuracy)
-                    neptune.log_metric('dev_f1', x=global_step, y=dev_f1)
+                    neptune.log_metric('dev_f1', x=global_step, y=curr_dev_f1)
                     early_stop_count_patience += 1
 
                 if self.configs["early_stopping"] and early_stop_count_patience > self.configs["early_stopping_patience"]:
@@ -125,10 +128,10 @@ class Trainer():
                     to_early_stop = True
                     break
 
-                if self.configs["checkpoint_on_improvement"] and curr_dev_loss < best_dev_loss:
-                    logger.info(f"Dev Loss Reduction from {best_dev_loss} to {curr_dev_loss}")
-                    best_model_path = save_model(model, tokenizer, self.configs["checkpointing_path"], self.configs, step_no=global_step, current_dev_score=best_dev_loss)
-                    best_dev_loss = curr_dev_loss
+                if self.configs["checkpoint_on_improvement"] and curr_dev_f1 > best_dev_f1:
+                    logger.info(f"Dev Loss Reduction from {best_dev_f1} to {curr_dev_f1}")
+                    best_model_path = save_model(model, tokenizer, self.configs["checkpointing_path"], self.configs, step_no=global_step, current_dev_score=curr_dev_f1)
+                    best_dev_f1 = curr_dev_f1
                     early_stop_count_patience = 0
 
                 if self.configs["checkpointing_on"] and global_step % self.configs["checkpointing_freq"] == 0:
@@ -137,12 +140,12 @@ class Trainer():
             if to_early_stop:
                 break
        
-        loss_final = training_loss / global_step
+        loss_final = (training_loss / global_step) if global_step > 0 else 0
 
         # Final Evaluation Loop
 
         final_dev_f1, final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
-        final_test_f1, final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"])
+        final_test_f1, final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], isTest=True)
 
         neptune.log_metric('dev_loss', x=global_step, y=final_dev_loss)
         neptune.log_metric('dev_accuracy', x=global_step, y=final_dev_accuracy)
@@ -184,7 +187,7 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(model_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels, _ = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"])
+        train_loader, dev_loader, test_loader, no_labels, _ = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"])
         self.configs["num_labels"] = no_labels
 
         # Instantiate Model
@@ -194,15 +197,20 @@ class Trainer():
 
         model.to(self.configs["device"])
 
-        final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
-        final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"])
+        final_dev_f1, final_dev_accuracy, final_dev_loss, y_true_dev, y_pred_dev, sentence_id_dev = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"], return_pred_lists=True)
+        dump_predictions(sentence_id_dev, y_pred_dev, y_true_dev, os.path.join(model_path, "predictions_dev.tsv"))
+        
+        final_test_f1, final_test_accuracy, final_test_loss, y_true_test, y_pred_test, sentence_id_test = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], return_pred_lists=True, isTest=True)
+        dump_predictions(sentence_id_test, y_pred_test, y_true_test, os.path.join(model_path, "predictions_test.tsv"))
 
-        dict_of_results["DEV"] = {"Accuracy": final_dev_accuracy, "Loss": final_dev_loss} 
-        dict_of_results["TEST"] = {"Accuracy": final_test_accuracy, "Loss": final_test_loss}
+        dict_of_results["DEV"] = {"F1": final_dev_f1, "Accuracy": final_dev_accuracy, "Loss": final_dev_loss} 
+        dict_of_results["TEST"] = {"F1": final_test_f1, "Accuracy": final_test_accuracy, "Loss": final_test_loss}
 
         if evaluate_on_train:
-            final_train_accuracy, final_train_loss = evaluate_predictions(model, train_loader, self.configs["model_class"], device=self.configs["device"])
-            dict_of_results["TRAIN"] = {"Accuracy": final_train_accuracy, "Loss": final_train_loss}
+            final_train_f1, final_train_accuracy, final_train_loss, y_true_train, y_pred_train, sentence_id_train = evaluate_predictions(model, train_loader, self.configs["model_class"], device=self.configs["device"], return_pred_lists=True)
+            dump_predictions(sentence_id_train, y_pred_train, y_true_train, os.path.join(model_path, "predictions_train.tsv"))
+
+            dict_of_results["TRAIN"] = {"F1": final_train_f1, "Accuracy": final_train_accuracy, "Loss": final_train_loss}
 
         return dict_of_results
 
@@ -231,7 +239,7 @@ class Trainer():
 if __name__ == "__main__":
 
     import sys
-    config_file_path = sys.argv[1]
+    config_file_path = "config.yaml" #  sys.argv[1]
 
     trainer_class = Trainer(config_file_path=config_file_path)
     # trainer_class.train()

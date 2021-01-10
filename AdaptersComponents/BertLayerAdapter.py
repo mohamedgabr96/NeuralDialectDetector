@@ -14,7 +14,7 @@ class BertSelfOutput_w_adapters(BertSelfOutput):
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
-        hidden_states = hidden_states + self.adapter_layer(input_tensor) # Residual/Skip-Connection
+        hidden_states = hidden_states + self.adapter_layer(hidden_states) # Residual/Skip-Connection
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
         return hidden_states
 
@@ -27,7 +27,7 @@ class BertOutput_w_adapters(BertOutput):
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
-        hidden_states = hidden_states + self.adapter_layer(input_tensor)
+        hidden_states = hidden_states + self.adapter_layer(hidden_states)
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
         return hidden_states
 

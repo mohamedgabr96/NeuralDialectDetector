@@ -29,13 +29,13 @@ class ArabicDialectBERT(BertPreTrainedModel):
                 # self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
                 self.bert.encoder.layer = nn.ModuleList([BertLayer(config) for _ in range(11)] + [BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(1)])
             elif args["adapter_type"] == "plain_adapter":
-                # self.bert.encoder.layer = nn.ModuleList([BertLayer_w_PlainAdapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
-                self.bert.encoder.layer = nn.ModuleList([BertLayer(config) for _ in range(11)] + [BertLayer_w_PlainAdapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(1)])
-            for param in self.bert.encoder.layer.named_parameters():
-                if "adapter_layer" not in param[0] or "list_of_adapter_modules" in param[0]:
-                    param[1].requires_grad = False
-                else:
-                    print(param[0])
+                self.bert.encoder.layer = nn.ModuleList([BertLayer_w_PlainAdapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
+                # self.bert.encoder.layer = nn.ModuleList([BertLayer(config) for _ in range(10)] + [BertLayer_w_PlainAdapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(2)])
+            # for param in self.bert.encoder.layer.named_parameters():
+            #     if "adapter_layer" not in param[0] or "list_of_adapter_modules" in param[0]:
+            #         param[1].requires_grad = False
+            #     else:
+            #         print(param[0])
             # Freeze all except adapters and head
 
         # self.loss_function = nn.CrossEntropyLoss(weight=torch.tensor(self.args["cls_weights"]))
