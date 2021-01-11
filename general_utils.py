@@ -65,6 +65,8 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
     total_no_steps, num_samples = 0, 0
     preds, g_truths, list_of_sentence_ids = [], [], []
     logits_list = []
+    y_true = []
+    y_pred = []
     for batch in no_batches:
         batch = [x.to(device) for x in batch]
         label_ids_in = batch[3] if not isTest else None
