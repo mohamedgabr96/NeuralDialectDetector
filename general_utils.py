@@ -53,7 +53,7 @@ def dump_predictions(sentence_index, soft_max_vals, predictions, labels, path_to
     with open(path_to_save_folder, encoding="utf-8", mode="w") as file_open:
         file_open.write("Sentence Index\tSoftMaxes\tPredictions\tLabels\n\n")
         for index in range(len(sentence_index)):
-            file_open.write(str(sentence_index[index]) + "\t" + str(soft_max_vals[index]) + "\t" + str(predictions[index]) + "\t" + str(labels[index]) + "\n")
+            file_open.write(str(sentence_index[index]) + "\t" + "["+str(" ".join(map(str,soft_max_vals[index])))+"]" + "\t" + str(predictions[index]) + "\t" + str(labels[index]) + "\n")
 
 
 
@@ -73,7 +73,7 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
         total_no_steps += 1
 
         if model_class_name == "ArabicDialectBERT":
-            logits_list.extend(torch.nn.functional.softmax(logits).detach().cpu().numpy())
+            logits_list.extend(torch.nn.functional.softmax(logits, dim=-1).detach().cpu().numpy())
             label_ids = logits.argmax(axis=1)
             g_truths.extend(batch[3].detach().cpu().numpy())
             preds.extend(label_ids.detach().cpu().numpy())

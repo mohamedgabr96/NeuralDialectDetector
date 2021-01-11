@@ -20,9 +20,10 @@ class Trainer():
         self.configs = read_yaml_file(config_file_path)
         self.model_name_path = self.configs["model_name_path"]
         logging.basicConfig(filename=os.path.join(self.configs["checkpointing_path"], 'training_log.log'), level=logging.DEBUG)
-        neptune.init(project_qualified_name='mohamedgabr96/sandbox',
-             api_token=self.configs["neptuneaiAPI"],
-             )
+        if self.configs["use_neptune"]:
+            neptune.init(project_qualified_name='mohamedgabr96/sandbox',
+                api_token=self.configs["neptuneaiAPI"],
+                )
 
     @staticmethod
     def set_seeds(seed_val):
@@ -43,8 +44,9 @@ class Trainer():
         neptune.log_metric('masking_percentage', self.configs["masking_percentage"])
 
     def train(self):
-        neptune.create_experiment(name=self.configs["neptune_experiment_name"])
-        self.log_single_metrics_to_neptune()
+        if self.configs["use_neptune"]:
+            neptune.create_experiment(name=self.configs["neptune_experiment_name"])
+            self.log_single_metrics_to_neptune()
         tokenizer = AutoTokenizer.from_pretrained(self.model_name_path)
         model_config = AutoConfig.from_pretrained(self.model_name_path)
 
@@ -105,11 +107,11 @@ class Trainer():
                 loss.backward()
 
                 training_loss += loss.item()
-
-                neptune.log_metric('train_loss', x=global_step, y=loss.item())
-                neptune.log_metric('learning_rate_body', x=global_step, y=optimizer.param_groups[0]['lr'])
-                if len(optimizer.param_groups) > 1:
-                    neptune.log_metric('learning_rate_head', x=global_step, y=optimizer.param_groups[1]['lr'])
+                if self.configs["use_neptune"]:
+                    neptune.log_metric('train_loss', x=global_step, y=loss.item())
+                    neptune.log_metric('learning_rate_body', x=global_step, y=optimizer.param_groups[0]['lr'])
+                    if len(optimizer.param_groups) > 1:
+                        neptune.log_metric('learning_rate_head', x=global_step, y=optimizer.param_groups[1]['lr'])
 
                 optimizer.step()
                 scheduler.step()  
@@ -118,9 +120,10 @@ class Trainer():
 
                 if global_step % self.configs["improvement_check_freq"] == 0:
                     curr_dev_f1, dev_accuracy, curr_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
-                    neptune.log_metric('dev_loss', x=global_step, y=curr_dev_loss)
-                    neptune.log_metric('dev_accuracy', x=global_step, y=dev_accuracy)
-                    neptune.log_metric('dev_f1', x=global_step, y=curr_dev_f1)
+                    if self.configs["use_neptune"]:
+                        neptune.log_metric('dev_loss', x=global_step, y=curr_dev_loss)
+                        neptune.log_metric('dev_accuracy', x=global_step, y=dev_accuracy)
+                        neptune.log_metric('dev_f1', x=global_step, y=curr_dev_f1)
                     early_stop_count_patience += 1
 
                 if self.configs["early_stopping"] and early_stop_count_patience > self.configs["early_stopping_patience"]:
@@ -143,13 +146,16 @@ class Trainer():
         loss_final = (training_loss / global_step) if global_step > 0 else 0
 
         # Final Evaluation Loop
+        if no_epochs > 0:
+            final_dev_f1, final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
+            final_test_f1, final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], isTest=True)
+        else:
+            final_dev_accuracy = 0
 
-        final_dev_f1, final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
-        final_test_f1, final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], isTest=True)
-
-        neptune.log_metric('dev_loss', x=global_step, y=final_dev_loss)
-        neptune.log_metric('dev_accuracy', x=global_step, y=final_dev_accuracy)
-        neptune.log_metric('dev_f1', x=global_step, y=final_dev_f1)
+        if self.configs["use_neptune"]:
+            neptune.log_metric('dev_loss', x=global_step, y=final_dev_loss)
+            neptune.log_metric('dev_accuracy', x=global_step, y=final_dev_accuracy)
+            neptune.log_metric('dev_f1', x=global_step, y=final_dev_f1)
 
         # Final Model Saving
         if self.configs["save_final_model"]:
@@ -180,7 +186,7 @@ class Trainer():
         logger.info(f"Training with multiple seeds ended.. Final aggregation of dev scores {final_aggregation}")
         return np.mean(dev_accuracy_list), model_pathes
 
-    def evaluate_from_path(self, model_path, evaluate_on_train=True):
+    def evaluate_from_path(self, model_path, evaluate_on_train=False):
         dict_of_results = {}
 
         tokenizer = AutoTokenizer.from_pretrained(model_path)
@@ -225,14 +231,15 @@ class Trainer():
             aggregation_dict = update_dict_of_agg(aggregation_dict, dict_of_results)
 
         # Add a Field of Aggregation
-        for split in ["TRAIN", "DEV", "TEST"]:
+        for split in ["DEV", "TEST"]:
             aggregation_dict[split]["Accuracy"] = np.mean(aggregation_dict[split]["Accuracy"])
             aggregation_dict[split]["Loss"] = np.mean(aggregation_dict[split]["Loss"])
 
         dict_of_seed_results["Agg"] = aggregation_dict
 
         save_json(os.path.join(self.configs["checkpointing_path"], "final_scores.json"), dict_of_seed_results)
-        neptune.stop()
+        if self.configs["use_neptune"]:
+            neptune.stop()
         return dict_of_seed_results
 
 

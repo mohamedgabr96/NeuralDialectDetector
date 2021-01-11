@@ -101,7 +101,7 @@ def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_li
 
 def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, masking_percentage=0.2, class_to_filter=None, regional_mapping=None, filter_w_indexes=None, pred_class=-1):
     params = {'batch_size': batch_size}
-    params_dev = {'batch_size': 16}
+    params_dev = {'batch_size': batch_size // 2}
     regional_mapping_content = parse_mapping_list(path_to_data_folder)
     if regional_mapping_content is not None:
         classes_list = list(set(regional_mapping_content.values()))

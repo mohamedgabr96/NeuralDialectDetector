@@ -6,8 +6,8 @@ from tqdm import tqdm
 # PATH = "/Users/mohamedgabr/Documents/NeuralDialectDetector/pytorch_model"
 # PATH2 = "/Users/mohamedgabr/Documents/NeuralDialectDetector/pytorch_model_2/pytorch_model.bin"
 
-start_model_path = "./checkpoints_regions/RegionClassifier/pytorch_model.bin"
-end_model_path = "./checkpoints_regions/RegionClassifier/pytorch_model.bin"
+start_model_path = "./checkpoints_regions/RegionClassifier_MARBERT/pytorch_model.bin"
+end_model_path = "./checkpoints_regions/RegionClassifier_MARBERT/pytorch_model.bin"
 
 
 # # load pytorch model of adapters

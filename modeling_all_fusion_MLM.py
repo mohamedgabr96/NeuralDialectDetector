@@ -18,7 +18,7 @@ config_file_open = read_yaml_file(config_file_path)
 countries_list = open(file_path_classes, encoding="utf-8").readlines()
 countries_list = [x.strip("\n") for x in countries_list]
 
-prev_model_name = "checkpoints/adapter_bert_arabic_w_pretrainedfusionstuff-20210105T124954Z-001/adapter_bert_arabic_w_pretrainedfusionstuff"
+prev_model_name = "UBC-NLP/MARBERT"
 for index, country in enumerate(countries_list):
     config_file_open["one_class_filtration"] = country
     config_file_open["current_adapter_to_train"] = index
