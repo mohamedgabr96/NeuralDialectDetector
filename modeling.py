@@ -51,8 +51,8 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(self.model_name_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels, cls_weights = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"])
-        self.configs["num_labels"] = no_labels
+        train_loader, dev_loader, test_loader, no_labels, cls_weights = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"])
+        self.configs["num_labels"] = self.configs.get("num_labels", no_labels)
         self.configs["cls_weights"] = cls_weights
 
         # model = AutoModel.from_pretrained(self.model_name_path)
@@ -86,6 +86,9 @@ class Trainer():
         best_model_path = ""
         last_model_path = ""
         no_epochs = trange(self.configs["num_epochs"], desc="Epoch Number")
+
+        assert no_labels == self.configs["num_labels"] or no_epochs==0, "Specified Number of Labels Not Equal to Labels in Model"
+
         global_step = 0
         training_loss = 0.0
         best_dev_loss = np.inf
@@ -156,7 +159,13 @@ class Trainer():
             neptune.log_metric('dev_loss', x=global_step, y=final_dev_loss)
             neptune.log_metric('dev_accuracy', x=global_step, y=final_dev_accuracy)
             neptune.log_metric('dev_f1', x=global_step, y=final_dev_f1)
+            
+        isTest_flag_for_dev_train = not (no_labels == self.configs["num_labels"])
 
+        final_dev_f1, final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"], isTest=isTest_flag_for_dev_train)
+        final_test_f1, final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], isTest=True)
+
+   
         # Final Model Saving
         if self.configs["save_final_model"]:
             last_model_path = save_model(model, tokenizer, self.configs["checkpointing_path"], self.configs, step_no=global_step, current_dev_score=final_dev_accuracy)
@@ -193,8 +202,10 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(model_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels, _ = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"])
-        self.configs["num_labels"] = no_labels
+        train_loader, dev_loader, test_loader, no_labels, _ = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"])
+        self.configs["num_labels"] = self.configs.get("num_labels", no_labels)
+
+        isTest_flag_for_dev_train = not (no_labels == self.configs["num_labels"])
 
         # Instantiate Model
         model = getattr(model_classes, self.configs["model_class"]).from_pretrained(model_path,
@@ -203,7 +214,7 @@ class Trainer():
 
         model.to(self.configs["device"])
 
-        final_dev_f1, final_dev_accuracy, final_dev_loss, y_true_dev, y_pred_dev, sentence_id_dev, logits_list_dev = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"], return_pred_lists=True)
+        final_dev_f1, final_dev_accuracy, final_dev_loss, y_true_dev, y_pred_dev, sentence_id_dev, logits_list_dev = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"], return_pred_lists=True, isTest=isTest_flag_for_dev_train)
         dump_predictions(sentence_id_dev, logits_list_dev, y_pred_dev, y_true_dev, os.path.join(model_path, "predictions_dev.tsv"))
         
         final_test_f1, final_test_accuracy, final_test_loss, y_true_test, y_pred_test, sentence_id_test, logits_list_test = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], return_pred_lists=True, isTest=True)
@@ -213,25 +224,28 @@ class Trainer():
         dict_of_results["TEST"] = {"F1": final_test_f1, "Accuracy": final_test_accuracy, "Loss": final_test_loss}
 
         if evaluate_on_train:
-            final_train_f1, final_train_accuracy, final_train_loss, y_true_train, y_pred_train, sentence_id_train, logits_list_train = evaluate_predictions(model, train_loader, self.configs["model_class"], device=self.configs["device"], return_pred_lists=True)
+            final_train_f1, final_train_accuracy, final_train_loss, y_true_train, y_pred_train, sentence_id_train, logits_list_train = evaluate_predictions(model, train_loader, self.configs["model_class"], device=self.configs["device"], return_pred_lists=True, isTest=isTest_flag_for_dev_train)
             dump_predictions(sentence_id_train, logits_list_train, y_pred_train, y_true_train, os.path.join(model_path, "predictions_train.tsv"))
 
             dict_of_results["TRAIN"] = {"F1": final_train_f1, "Accuracy": final_train_accuracy, "Loss": final_train_loss}
 
         return dict_of_results
 
-    def train_and_evaluate_with_multiple_seeds(self, no_times, seeds_from_config=False):
+    def train_and_evaluate_with_multiple_seeds(self, no_times, seeds_from_config=False, eval_on_train=True):
         accuracy_agg, model_pathes = self.train_with_multiple_seeds(no_times, seeds_from_config=seeds_from_config)
 
         dict_of_seed_results = {}
         aggregation_dict = {"TRAIN": {"Accuracy": [], "Loss": []}, "DEV": {"Accuracy": [], "Loss": []}, "TEST": {"Accuracy": [], "Loss": []}}
         for index, path in enumerate(model_pathes):
-            dict_of_results = self.evaluate_from_path(path)
+            dict_of_results = self.evaluate_from_path(path, evaluate_on_train=eval_on_train)
             dict_of_seed_results[f"seed_{index}"] = dict_of_results
-            aggregation_dict = update_dict_of_agg(aggregation_dict, dict_of_results)
+            aggregation_dict = update_dict_of_agg(aggregation_dict, dict_of_results, eval_on_train=eval_on_train)
 
         # Add a Field of Aggregation
-        for split in ["DEV", "TEST"]:
+        split_list = ["DEV", "TEST"]
+        if eval_on_train:
+            split_list.append("TRAIN")
+        for split in split_list:
             aggregation_dict[split]["Accuracy"] = np.mean(aggregation_dict[split]["Accuracy"])
             aggregation_dict[split]["Loss"] = np.mean(aggregation_dict[split]["Loss"])
 
@@ -251,4 +265,4 @@ if __name__ == "__main__":
     trainer_class = Trainer(config_file_path=config_file_path)
     # trainer_class.train()
     # trainer_class.train_with_multiple_seeds(3)
-    trainer_class.train_and_evaluate_with_multiple_seeds(1, seeds_from_config=True)
+    trainer_class.train_and_evaluate_with_multiple_seeds(1, seeds_from_config=True, eval_on_train=True)
