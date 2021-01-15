@@ -76,7 +76,9 @@ class ArabicDialectBERTMaskedLM(BertForMaskedLM):
         super(ArabicDialectBERTMaskedLM, self).__init__(config)
         self.args = args
         self.bert = BertModel(config, add_pooling_layer=False)
-
+        self.masking_perc = args["masking_percentage"]
+        self.mask_id = args["mask_id"]
+        self.device_name = args["device"]
         if args["use_adapters"]:
             if args["adapter_type"] == "Fusion":
                 self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
@@ -97,9 +99,9 @@ class ArabicDialectBERTMaskedLM(BertForMaskedLM):
         self._init_weights(self.cls.predictions.decoder)
 
     def forward(self, input_ids, attention_mask, token_type_ids, class_label_ids, input_ids_masked):
-
+        input_ids = random_mask_tokens(input_ids, attention_mask, self.masking_perc, self.mask_id, self.device_name)
         outputs = self.bert(
-            input_ids_masked,
+            input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             return_dict=True
