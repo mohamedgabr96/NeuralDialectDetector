@@ -20,12 +20,12 @@ countries_list = [x.strip("\n") for x in countries_list]
 
 prev_model_name = "UBC-NLP/MARBERT"
 for index, country in enumerate(countries_list):
-    config_file_open["one_class_filtration"] = country
+    config_file_open["one_class_filtration"] = [country]
     config_file_open["current_adapter_to_train"] = index
     config_file_open["neptune_experiment_name"] = f"{country}_adapter_fusion_stage_1"
     config_file_open["model_name_path"] = prev_model_name
-    config_file_open["run_title"] = f"adapter_fusion_{country}"
-    prev_model_name = os.path.join(config_file_open["checkpointing_path"], f"adapter_fusion_{country}")
+    config_file_open["run_title"] = f"{country}_adapter_fusion"
+    prev_model_name = os.path.join(config_file_open["checkpointing_path"], f"{country}_adapter_fusion")
 
     ## Save new config
     save_yaml_file(config_file_open, config_file_path)

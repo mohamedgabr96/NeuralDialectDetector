@@ -33,7 +33,7 @@ class FusionAttn(nn.Module):
         self.query = nn.Linear(config.hidden_size, config.hidden_size)
         self.key = nn.Linear(config.hidden_size, config.hidden_size)
         self.value = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
-        self.T = 1.0
+        self.T = 1
         self.reduction = self.T / 1000.0
         self.adapter_after_fusion = AdapterModule(config.hidden_size, bottleneck_dim)
         self.use_adapter_after_fusion = use_adapt_after_fusion
@@ -72,8 +72,8 @@ class AdapterFusionModule(nn.Module):
         self.stage_2_training = stage_2_training
         self.adapter_to_train_index = current_adapter_to_train
         self.number_of_tasks = no_total_adapters
-        self.list_of_adapter_modules = nn.ModuleList([AdapterModule(config.hidden_size, bottleneck_dim) for _ in range(self.number_of_tasks)]) 
-        self.adapter_fusion_attention_layer = FusionAttn(config, bottleneck_dim, use_adapt_after_fusion)
+        self.list_of_adapter_modules = nn.ModuleList([AdapterModule(config.hidden_size, 64) for _ in range(self.number_of_tasks)]) 
+        self.adapter_fusion_attention_layer = FusionAttn(config, 64, use_adapt_after_fusion)
      
         if self.stage_2_training:
             for p in self.list_of_adapter_modules.named_parameters():

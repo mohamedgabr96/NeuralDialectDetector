@@ -51,12 +51,13 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(self.model_name_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels, cls_weights = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"])
+        train_loader, dev_loader, test_loader, no_labels, cls_weights = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"], max_seq_len=self.configs["max_sequence_length"])
         self.configs["num_labels"] = self.configs.get("num_labels", no_labels)
         self.configs["cls_weights"] = cls_weights
 
         # model = AutoModel.from_pretrained(self.model_name_path)
         # Instantiate Model
+        self.configs["mask_id"] = tokenizer.convert_tokens_to_ids(tokenizer.mask_token)
         model = getattr(model_classes, self.configs["model_class"]).from_pretrained(self.model_name_path,
                                                             config=model_config,
                                                             args=self.configs)
@@ -74,7 +75,7 @@ class Trainer():
                 },
                 {
                     'params': model.classif_head.parameters(),
-                    'lr': 5.e-5
+                    'lr': 1.e-3 #5.e-5
                 }
             ], lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
         scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.configs["warmup_steps"], num_training_steps=total_steps)
@@ -87,7 +88,7 @@ class Trainer():
         last_model_path = ""
         no_epochs = trange(self.configs["num_epochs"], desc="Epoch Number")
 
-        assert no_labels == self.configs["num_labels"] or no_epochs==0, "Specified Number of Labels Not Equal to Labels in Model"
+        #assert no_labels == self.configs["num_labels"] or no_epochs==0, "Specified Number of Labels Not Equal to Labels in Model"
 
         global_step = 0
         training_loss = 0.0
@@ -135,9 +136,10 @@ class Trainer():
                     break
 
                 if self.configs["checkpoint_on_improvement"] and curr_dev_f1 > best_dev_f1:
-                    logger.info(f"Dev Loss Reduction from {best_dev_f1} to {curr_dev_f1}")
+                    logger.info(f"Dev Loss Reduction from {best_dev_loss} to {curr_dev_loss}")
                     best_model_path = save_model(model, tokenizer, self.configs["checkpointing_path"], self.configs, step_no=global_step, current_dev_score=curr_dev_f1)
                     best_dev_f1 = curr_dev_f1
+                    best_dev_loss = curr_dev_loss
                     early_stop_count_patience = 0
 
                 if self.configs["checkpointing_on"] and global_step % self.configs["checkpointing_freq"] == 0:
@@ -149,7 +151,7 @@ class Trainer():
         loss_final = (training_loss / global_step) if global_step > 0 else 0
 
         # Final Evaluation Loop
-        if no_epochs > 0:
+        if self.configs["num_epochs"] > 0:
             final_dev_f1, final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
             final_test_f1, final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], isTest=True)
         else:
@@ -202,12 +204,13 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(model_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels, _ = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"])
+        train_loader, dev_loader, test_loader, no_labels, _ = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"], max_seq_len=self.configs["max_sequence_length"])
         self.configs["num_labels"] = self.configs.get("num_labels", no_labels)
 
         isTest_flag_for_dev_train = not (no_labels == self.configs["num_labels"])
 
         # Instantiate Model
+        self.configs["mask_id"] = tokenizer.convert_tokens_to_ids(tokenizer.mask_token)
         model = getattr(model_classes, self.configs["model_class"]).from_pretrained(model_path,
                                                             config=model_config,
                                                             args=self.configs)
@@ -260,9 +263,9 @@ class Trainer():
 if __name__ == "__main__":
 
     import sys
-    config_file_path = "config.yaml" #  sys.argv[1]
+    config_file_path = "config.yaml" # #  sys.argv[1]
 
     trainer_class = Trainer(config_file_path=config_file_path)
     # trainer_class.train()
     # trainer_class.train_with_multiple_seeds(3)
-    trainer_class.train_and_evaluate_with_multiple_seeds(1, seeds_from_config=True, eval_on_train=True)
+    trainer_class.train_and_evaluate_with_multiple_seeds(1, seeds_from_config=True, eval_on_train=False)

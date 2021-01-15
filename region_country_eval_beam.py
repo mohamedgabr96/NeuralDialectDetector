@@ -54,8 +54,8 @@ region_country_map = {
 
 if __name__ == "__main__":
     
-    dirname = "checkpoints_regions"
-    path = os.path.join(dirname, "RegionClassifier_3", "predictions_test.tsv")
+    dirname = "checkpoints_marbert"
+    path = os.path.join(dirname, "RegionClassifier_MARBERT", "predictions_test.tsv")
     regions = ["Khaleegi", "Egypt_Sudan", "Levantine", "Maghrebi", "Mesopotamian", "Other"]
 
     region_preds = pd.read_csv(path, delimiter="\t")
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         if j == 4: 
             countries_dfs += [None]
         else:
-            path = os.path.join(dirname, region, f"predictions_test.tsv")
+            path = os.path.join(dirname, f"{region}_MARBERT_Adapters", f"predictions_test.tsv")
             countries_dfs += [pd.read_csv(path, delimiter="\t")]
 
     y_true = np.zeros(len(region_preds))

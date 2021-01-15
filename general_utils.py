@@ -57,6 +57,15 @@ def dump_predictions(sentence_index, soft_max_vals, predictions, labels, path_to
             file_open.write(str(sentence_index[index]) + "\t" + "["+str(" ".join(map(str,soft_max_vals[index])))+"]" + "\t" + str(predictions[index]) + "\t" + str(labels[index]) + "\n")
 
 
+def random_mask_tokens(input_ids, atttention_mask, masking_percentage, mask_id, device):
+    index_bool = torch.ones(input_ids.shape[0],input_ids.shape[1])*masking_percentage
+    index_bool = torch.where((input_ids != mask_id) * (input_ids != 1) * (input_ids != -100) * (input_ids != 2) * (input_ids != 3) * (input_ids != 0), index_bool.float().to(device), torch.zeros(input_ids.shape[0],input_ids.shape[1]).to(device))
+    index_bool = index_bool.to(device) 
+    index_bool = torch.mul(index_bool, atttention_mask) # To remove the ones that are masked from consideration
+    index_bool = torch.bernoulli(index_bool).bool()
+    input_ids[index_bool] = mask_id
+    return input_ids
+
 
 def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu", return_pred_lists=False, isTest=False):
     model.eval()
