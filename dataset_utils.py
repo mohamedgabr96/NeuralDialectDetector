@@ -90,16 +90,32 @@ def parse_data(path_to_file, separator="\t", regional_mapping_content=None, clas
     return lines_split
 
 
-def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", random_sampler=True, masking_percentage=0.2, class_to_filter=None, regional_mapping=None, filter_w_indexes=None, pred_class=-1, max_seq_len=128):
+def balance_data(data_examples, max_examples):
+    new_data_list = []
+    classes_set = set([x[2] for x in data_examples])
+    count_dict = {key: 0 for key in classes_set}
+    for example in data_examples:
+        if count_dict[example[2]] < max_examples:
+            new_data_list.append(example)
+            count_dict[example[2]] += 1
+
+    return new_data_list
+
+
+def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", random_sampler=True, masking_percentage=0.2, class_to_filter=None, regional_mapping=None, filter_w_indexes=None, pred_class=-1, max_seq_len=128, balance_data_max_examples=None):
     index_path = os.path.join(filter_w_indexes, f"predictions_{split_set}.tsv") if filter_w_indexes is not None else None
     data_examples = parse_data(os.path.join(path_to_data_folder, f"DA_{split_set}_labeled.tsv"), regional_mapping_content=regional_mapping, class_to_filter=class_to_filter, filter_w_indexes=index_path, pred_class=pred_class)
+    
+    if balance_data_max_examples is not None:
+        data_examples = balance_data(data_examples, balance_data_max_examples)
+
     dataset = load_and_cache_examples(data_examples, tokenizer, classes_list, max_seq_len=max_seq_len, masking_percentage=masking_percentage)
     data_sampler = RandomSampler(dataset) if random_sampler else None
     generator = torch.utils.data.DataLoader(dataset, shuffle=not random_sampler, sampler=data_sampler, **params)
     return generator
 
 
-def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, masking_percentage=0.2, class_to_filter=None, regional_mapping=None, filter_w_indexes=None, pred_class=-1, use_regional_mapping=False, max_seq_len=128):
+def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, masking_percentage=0.2, class_to_filter=None, regional_mapping=None, filter_w_indexes=None, pred_class=-1, use_regional_mapping=False, max_seq_len=128, balance_data_max_examples=None):
     params = {'batch_size': batch_size}
     params_dev = {'batch_size': batch_size // 2}
     regional_mapping_content = parse_mapping_list(path_to_data_folder) if use_regional_mapping else None
@@ -111,7 +127,7 @@ def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, mas
         classes_list.sort()
         print("Classes that will run: ")
         print(classes_list)
-    training_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, max_seq_len=max_seq_len)
+    training_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, max_seq_len=max_seq_len, balance_data_max_examples=balance_data_max_examples)
     dev_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params_dev, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, max_seq_len=max_seq_len)
     test_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params_dev, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, filter_w_indexes=filter_w_indexes, pred_class=pred_class, max_seq_len=max_seq_len)
 
