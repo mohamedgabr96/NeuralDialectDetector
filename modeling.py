@@ -164,14 +164,17 @@ class Trainer():
             
         isTest_flag_for_dev_train = not (no_labels == self.configs["num_labels"])
 
-        final_dev_f1, final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"], isTest=isTest_flag_for_dev_train)
-        final_test_f1, final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], isTest=True)
+        if self.configs["num_epochs"] > 0:
+            final_dev_f1, final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"], isTest=isTest_flag_for_dev_train)
+            final_test_f1, final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], isTest=True)
 
    
         # Final Model Saving
         if self.configs["save_final_model"]:
             last_model_path = save_model(model, tokenizer, self.configs["checkpointing_path"], self.configs, step_no=global_step, current_dev_score=final_dev_accuracy)
-
+        else:
+            last_model_path = self.model_name_path 
+            
         logger.info(f"Finished Training and Evaluation, final dev accuracy is {final_dev_accuracy}")
 
         model_path_to_return = best_model_path if len(best_model_path) > 0 else last_model_path
@@ -263,7 +266,7 @@ class Trainer():
 if __name__ == "__main__":
 
     import sys
-    config_file_path = "config.yaml" # #  sys.argv[1]
+    config_file_path = sys.argv[1]
 
     trainer_class = Trainer(config_file_path=config_file_path)
     # trainer_class.train()

@@ -55,20 +55,20 @@ region_country_map = {
 if __name__ == "__main__":
     
     dirname = "checkpoints_marbert"
-    path = os.path.join(dirname, "RegionClassifier_MARBERT", "predictions_test.tsv")
+    path = os.path.join(dirname, "RegionClassifier_60", "predictions_test.tsv")
     regions = ["Khaleegi", "Egypt_Sudan", "Levantine", "Maghrebi", "Mesopotamian", "Other"]
 
     region_preds = pd.read_csv(path, delimiter="\t")
-    print(len(region_preds))
 
     countries_dfs = []
     for j, region in enumerate(regions):
         if j == 4: 
             countries_dfs += [None]
         else:
-            path = os.path.join(dirname, f"{region}_MARBERT_Adapters", f"predictions_test.tsv")
+            path = os.path.join(dirname, f"{region}_MARBERT_Adapters_60", f"predictions_test.tsv")
             countries_dfs += [pd.read_csv(path, delimiter="\t")]
 
+    final_scores = []
     y_true = np.zeros(len(region_preds))
     y_pred = np.zeros(len(region_preds))
     for index, row in tqdm(region_preds.iterrows(), total=len(region_preds)):
@@ -94,6 +94,11 @@ if __name__ == "__main__":
             for k in range(len(probs_country)):
                 scores += [(probs_regions[j]*probs_country[k], j, k)]
         
+        final_scores_row = np.zeros(len(scores))
+        for score, r, c in scores:
+            final_scores_row[region_country_map[r][c]] = score
+        final_scores += [list(final_scores_row)]
+
         _, p_r, p_c = sorted(scores, reverse=True)[0]
         y_pred[index] = region_country_map[p_r][p_c]
         y_true[index] = gt_label
@@ -103,6 +108,9 @@ if __name__ == "__main__":
 
     print(f"DEV ACC: {100*acc:.2f}%")
     print(f"MACRO F1: {100*f1:.2f}%")
+
+    region_preds["FinalSoftmax"] = final_scores
+    region_preds.to_csv(os.path.join(os.path.dirname(path), "predictions_test_final.tsv"), sep = '\t', index=False)
 
     
     

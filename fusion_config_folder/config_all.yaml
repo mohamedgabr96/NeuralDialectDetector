@@ -16,6 +16,7 @@ improvement_check_freq: 25
 indexes_filtration_path: null
 initial_learning_rate: 0.000275
 masking_percentage: 0.2
+max_sequence_length: 100
 model_class: ArabicDialectBERTMaskedLM
 model_name_path: checkpoints_marbert_fusion/Mauritania_adapter_fusion
 neptune_experiment_name: Libya_adapter_fusion_stage_1
@@ -26,7 +27,7 @@ one_class_filtration:
 - Libya
 path_to_data: NADI2021_DEV.1.0/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
 run_title: Libya_adapter_fusion
-save_final_model: true
+save_final_model: false
 seed_list:
 - 1234
 - 611

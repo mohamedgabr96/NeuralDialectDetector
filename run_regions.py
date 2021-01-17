@@ -27,15 +27,17 @@ labels = [
 config_file_path = "./config.yaml"
 config_file_open = read_yaml_file(config_file_path)
 
+max_seq_len = config_file_open["max_sequence_length"]
+
 prev_model_name = "UBC-NLP/MARBERT"
 for index, region_list in enumerate(regions):
     if index in [4]: continue 
-    config_file_open["neptune_experiment_name"] = f"{labels[index]}_MARBERT_Adapters"
-    config_file_open["run_title"] = f"{labels[index]}_MARBERT_Adapters"
+    config_file_open["neptune_experiment_name"] = f"{labels[index]}_MARBERT_Adapters_{max_seq_len}"
+    config_file_open["run_title"] = f"{labels[index]}_MARBERT_Adapters_{max_seq_len}"
     config_file_open["class_index"] = index 
     config_file_open["one_class_filtration"] = region_list
     
     save_yaml_file(config_file_open, config_file_path)
     
-    command = f"python modeling.py"
+    command = f"python modeling.py config.yaml"
     os.system(command)

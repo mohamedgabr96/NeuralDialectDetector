@@ -52,7 +52,7 @@ def country_pred(region_id, sid, dtype):
     if region_id in [4]:
         return region_country_map[region_id][0]    
 
-    path = os.path.join(dirname, regions[region_id], f"predictions_{dtype}.tsv")
+    path = os.path.join(dirname, f"{regions[region_id]}_MARBERT_Adapters_60", f"predictions_{dtype}.tsv")
     country_preds = pd.read_csv(path, delimiter="\t")
 
     column = "Predictions" if dtype == "test" else "Labels"
@@ -62,8 +62,8 @@ def country_pred(region_id, sid, dtype):
 
 if __name__ == "__main__":
     
-    dirname = "checkpoints_regions"
-    path = os.path.join(dirname, "RegionClassifier", "predictions_test.tsv")
+    dirname = "checkpoints_marbert"
+    path = os.path.join(dirname, "RegionClassifier_60", "predictions_test.tsv")
     regions = ["Khaleegi", "Egypt_Sudan", "Levantine", "Maghrebi", "Mesopotamian", "Other"]
 
     region_preds = pd.read_csv(path, delimiter="\t")

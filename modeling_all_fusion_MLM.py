@@ -25,6 +25,8 @@ for index, country in enumerate(countries_list):
     config_file_open["neptune_experiment_name"] = f"{country}_adapter_fusion_stage_1"
     config_file_open["model_name_path"] = prev_model_name
     config_file_open["run_title"] = f"{country}_adapter_fusion"
+    config_file_open["stage_2_training"] = False 
+    config_file_open["save_final_model"] = False 
     prev_model_name = os.path.join(config_file_open["checkpointing_path"], f"{country}_adapter_fusion")
 
     ## Save new config
