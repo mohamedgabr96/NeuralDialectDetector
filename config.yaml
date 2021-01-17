@@ -1,6 +1,6 @@
 run_title: MARBERT_120
-path_to_data: NADI2021_DEV.1.0/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
-checkpointing_path: checkpoints_marbert
+path_to_data: /Users/mohamedgabr/Downloads/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
+checkpointing_path: checkpoints_regions
 # model_name_path: checkpoints_4/adapter_fusion_Libya
 # model_name_path: checkpoints/adapter_bert_arabic_w_pretrainedfusionstuff-20210105T124954Z-001/adapter_bert_arabic_w_pretrainedfusionstuff
 # model_name_path: checkpoints_regions/RegionClassifier
@@ -19,6 +19,7 @@ initial_learning_rate: 5.e-5
 adam_epsilon: 1.0e-08
 warmup_steps: 500
 num_epochs: 30 # 10
+max_ex_per_class: null # 200
 early_stopping: true
 early_stopping_patience: 10
 device: cuda # cuda # Choose between cpu and cuda
