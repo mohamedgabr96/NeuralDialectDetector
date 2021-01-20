@@ -1,5 +1,4 @@
 import os
-from region_country_eval import country_pred
 import numpy as np
 import pandas as pd 
 
@@ -55,17 +54,17 @@ region_country_map = {
 if __name__ == "__main__":
     
     dirname = "checkpoints_marbert"
-    path = os.path.join(dirname, "RegionClassifier_60", "predictions_test.tsv")
+    regions_path = os.path.join(dirname, "RegionClassifier_110", "predictions_test.tsv")
     regions = ["Khaleegi", "Egypt_Sudan", "Levantine", "Maghrebi", "Mesopotamian", "Other"]
 
-    region_preds = pd.read_csv(path, delimiter="\t")
+    region_preds = pd.read_csv(regions_path, delimiter="\t")
 
     countries_dfs = []
     for j, region in enumerate(regions):
         if j == 4: 
             countries_dfs += [None]
         else:
-            path = os.path.join(dirname, f"{region}_MARBERT_Adapters_60", f"predictions_test.tsv")
+            path = os.path.join(dirname, f"{region}_MARBERT_Adapters_110", f"predictions_test.tsv")
             countries_dfs += [pd.read_csv(path, delimiter="\t")]
 
     final_scores = []
@@ -110,7 +109,8 @@ if __name__ == "__main__":
     print(f"MACRO F1: {100*f1:.2f}%")
 
     region_preds["FinalSoftmax"] = final_scores
-    region_preds.to_csv(os.path.join(os.path.dirname(path), "predictions_test_final.tsv"), sep = '\t', index=False)
+    region_preds["Ground Truth"] = y_true
+    region_preds.to_csv(os.path.join(os.path.dirname(regions_path), "predictions_test_final.tsv"), sep = '\t', index=False)
 
     
     

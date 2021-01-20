@@ -27,18 +27,20 @@ labels = [
 config_file_path = "./config.yaml"
 config_file_open = read_yaml_file(config_file_path)
 
-for index, region in enumerate(labels):
-    if index in [4]: continue 
-    config_file_open["use_neptune"] = False
-    config_file_open["run_title"] = f"{region}_MARBERT_Adapters_60"
-    config_file_open["class_index"] = -1 
-    config_file_open["one_class_filtration"] = None 
-    config_file_open["model_name_path"] = os.path.join("checkpoints_marbert", f"{region}_MARBERT_Adapters_60")
-    config_file_open["num_epochs"] = 0
-    config_file_open["num_labels"] = len(regions[index])
-    config_file_open["use_regional_mapping"] = False
+for max_seq_len in [90, 100, 110]:
+    config_file_open["max_sequence_length"] = max_seq_len
+    for index, region in enumerate(labels):
+        if index in [4]: continue 
+        config_file_open["use_neptune"] = False
+        config_file_open["run_title"] = f"{region}_MARBERT_Adapters_{max_seq_len}"
+        config_file_open["class_index"] = -1 
+        config_file_open["one_class_filtration"] = None 
+        config_file_open["model_name_path"] = os.path.join("checkpoints_marbert", f"{region}_MARBERT_Adapters_{max_seq_len}")
+        config_file_open["num_epochs"] = 0
+        config_file_open["num_labels"] = len(regions[index])
+        config_file_open["use_regional_mapping"] = False
 
-    save_yaml_file(config_file_open, config_file_path)
-    
-    command = f"python modeling.py config.yaml"
-    os.system(command)
+        save_yaml_file(config_file_open, config_file_path)
+        
+        command = f"python modeling.py config.yaml"
+        os.system(command)

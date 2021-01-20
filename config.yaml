@@ -1,5 +1,7 @@
 run_title: MARBERT_120
 path_to_data: /Users/mohamedgabr/Downloads/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
+is_province: false
+is_MSA: false
 checkpointing_path: checkpoints_regions
 # model_name_path: checkpoints_4/adapter_fusion_Libya
 # model_name_path: checkpoints/adapter_bert_arabic_w_pretrainedfusionstuff-20210105T124954Z-001/adapter_bert_arabic_w_pretrainedfusionstuff
