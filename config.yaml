@@ -49,15 +49,15 @@ neptune_experiment_name: "MARBERT_100_VAT"
 use_neptune: true
 
 ## VAT settings
-vatt-use-common-transform: true 
+vatt-use-common-transform: false 
 vatt-bottleneck_dim: 384
-vatt-final-adapter: true
+vatt-final-adapter: false
 use_vert_att: true 
 
 ## Adapter settings
 
 ## Settings for all adapts
-use_adapters: false
+use_adapters: true
 adapter_type: plain_adapter # Fusion #Fusion #
 bottleneck_dim: 384
 
