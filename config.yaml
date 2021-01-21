@@ -1,8 +1,8 @@
-run_title: MARBERT_120
-path_to_data: /Users/mohamedgabr/Downloads/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
+run_title: MARBERT_100_VAT_1
+path_to_data: NADI2021_DEV.1.0/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
 is_province: false
 is_MSA: false
-checkpointing_path: checkpoints_regions
+checkpointing_path: checkpoints_marbert
 # model_name_path: checkpoints_4/adapter_fusion_Libya
 # model_name_path: checkpoints/adapter_bert_arabic_w_pretrainedfusionstuff-20210105T124954Z-001/adapter_bert_arabic_w_pretrainedfusionstuff
 # model_name_path: checkpoints_regions/RegionClassifier
@@ -46,8 +46,15 @@ use_regional_mapping: false
 # one_class_filtration: ["Somalia", "Djibouti", "Mauritania"] # 5
 # seed_list: [760]
 neptuneaiAPI: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsImFwaV91cmwiOiJodHRwczovL3VpLm5lcHR1bmUuYWkiLCJhcGlfa2V5IjoiYzNlOTI4MDUtMWEwMC00N2U3LWEzYTAtZjAyMzA2YzE1YjI3In0=
-neptune_experiment_name: "MARBERT_plain_120"
+neptune_experiment_name: "MARBERT_100_VAT"
 use_neptune: true
+
+## VAT settings
+vatt-use-common-transform: false 
+vatt-bottleneck_dim: 384
+vatt-final-adapter: false
+vatt-positional-keys: true
+use_vert_att: true 
 
 ## Adapter settings
 
