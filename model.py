@@ -1,4 +1,7 @@
-import torch 
+from typing import (
+    List
+)
+import torch
 import torch.nn as nn
 from transformers import AutoModel, PreTrainedModel
 from transformers import BertModel, BertPreTrainedModel, BertForMaskedLM
@@ -6,7 +9,9 @@ from transformers.models.bert.modeling_bert import BertOnlyMLMHead, BertLayer
 from AdaptersComponents.BertLayerAdapter import BertLayer_w_Adapters
 from AdaptersComponents.BertLayerPlainAdapter import BertLayer_w_PlainAdapters
 from general_utils import random_mask_tokens
+from vatt.vatt import SelfAttention
 
+# from transformers.models.bert.modeling_bert import BertModel as TBertModel
 
 class ClassificationHead(nn.Module):
     def __init__(self, input_dim, num_labels, dropout_rate=0.):
@@ -30,10 +35,16 @@ class ArabicDialectBERT(BertPreTrainedModel):
         self.device_name = args["device"]
         if args["use_adapters"]:
             if args["adapter_type"] == "Fusion":
-                self.bert.encoder.layer = nn.ModuleList([BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
+                self.bert.encoder.layer = nn.ModuleList([
+                    BertLayer_w_Adapters(config,
+                        args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"])
+                        for _ in range(config.num_hidden_layers)])
                 # self.bert.encoder.layer = nn.ModuleList([BertLayer(config) for _ in range(11)] + [BertLayer_w_Adapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(1)])
             elif args["adapter_type"] == "plain_adapter":
-                self.bert.encoder.layer = nn.ModuleList([BertLayer_w_PlainAdapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(config.num_hidden_layers)])
+                self.bert.encoder.layer = nn.ModuleList([
+                    BertLayer_w_PlainAdapters(config,
+                        args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"])
+                        for _ in range(config.num_hidden_layers)])
                 # self.bert.encoder.layer = nn.ModuleList([BertLayer(config) for _ in range(10)] + [BertLayer_w_PlainAdapters(config, args["bottleneck_dim"], args["current_adapter_to_train"], args["no_total_adapters"], args["stage_2_training"], args["use_adapt_after_fusion"]) for _ in range(2)])
             for param in self.bert.encoder.layer.named_parameters():
                 if "adapter_layer" not in param[0]: #or "list_of_adapter_modules" in param[0]:
@@ -42,6 +53,9 @@ class ArabicDialectBERT(BertPreTrainedModel):
                     print(param[0])
             # Freeze all except adapters and head
 
+        if args["use_vert_att"]:
+            self.attend_vertical = SelfAttention(args, config)
+
         # self.loss_function = nn.CrossEntropyLoss(weight=torch.tensor(self.args["cls_weights"]))
         self.loss_function = nn.CrossEntropyLoss()
         self.classif_head = ClassificationHead(config.hidden_size, self.num_labels, args["classif_dropout_rate"])
@@ -49,9 +63,19 @@ class ArabicDialectBERT(BertPreTrainedModel):
     def forward(self, input_ids, attention_mask, token_type_ids, class_label_ids, input_ids_masked):
         if self.train:
             input_ids = random_mask_tokens(input_ids, attention_mask, self.masking_perc, self.mask_id, self.device_name)
-        outputs = self.bert(input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)  # sequence_output, pooled_output, (hidden_states), (attentions)
+        outputs = self.bert(
+            input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            output_hidden_states=True,
+        )  # sequence_output, pooled_output, (hidden_states), (attentions)
         sequence_output = outputs[0]  # Not needed for now
         pooled_output = outputs[1]  # [CLS]
+        
+        if self.args['use_vert_att']:
+            iatt = [layer[:,0,:] for layer in outputs[2]]
+            new_feats = self.attend_vertical(Xs=iatt, Q=pooled_output)
+            pooled_output = self.bert.pooler(new_feats)
 
         logits = self.classif_head(pooled_output)
 
