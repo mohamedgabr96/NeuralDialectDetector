@@ -9,7 +9,7 @@ from transformers.models.bert.modeling_bert import BertOnlyMLMHead, BertLayer
 from AdaptersComponents.BertLayerAdapter import BertLayer_w_Adapters
 from AdaptersComponents.BertLayerPlainAdapter import BertLayer_w_PlainAdapters
 from general_utils import random_mask_tokens
-from vatt.vatt import SelfAttention
+from vatt import vatt
 
 # from transformers.models.bert.modeling_bert import BertModel as TBertModel
 
@@ -54,7 +54,7 @@ class ArabicDialectBERT(BertPreTrainedModel):
             # Freeze all except adapters and head
 
         if args["use_vert_att"]:
-            self.attend_vertical = SelfAttention(args, config)
+            self.attend_vertical = vatt.SelfAttention(args, config)
 
         # self.loss_function = nn.CrossEntropyLoss(weight=torch.tensor(self.args["cls_weights"]))
         self.loss_function = nn.CrossEntropyLoss()
