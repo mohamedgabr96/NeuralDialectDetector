@@ -10,10 +10,27 @@ import os
 import neptune
 import random 
 import model as model_classes
-from torch.optim.lr_scheduler import CyclicLR
+from torch.optim.lr_scheduler import CyclicLR, LambdaLR
 
 logger = logging.getLogger(__name__)
 
+class InvSqrtLR(LambdaLR):
+    def __init__(
+            self, optim,
+            num_warmup: int, max_factor: float = np.inf, min_factor: float = 0.0,
+            mini_epoch_size=1,
+    ):
+        super().__init__(optim, self.lr_lambda)
+        self.num_warmup = num_warmup
+        self.max_factor = max_factor
+        self.min_factor = min_factor
+        self.mini_epoch_sz = mini_epoch_size
+
+    def lr_lambda(self, iteration: int) -> float:
+        iteration = iteration // self.mini_epoch_sz
+        fac = 1. / np.sqrt(max(self.num_warmup, iteration))
+        fac = np.clip(fac, a_min=self.min_factor, a_max=self.max_factor)
+        return fac
 
 class Trainer():
     def __init__(self, config_file_path="config.yaml"):
@@ -78,7 +95,10 @@ class Trainer():
                     'lr': 1.e-3 #5.e-5
                 }
             ], lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
-        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.configs["warmup_steps"], num_training_steps=total_steps)
+        scheduler = InvSqrtLR(optimizer,
+            num_warmup=self.configs["warmup_steps"],
+            mini_epoch_size=self.configs.get('lr-mini-epoch-size', 1))
+        # scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.configs["warmup_steps"], num_training_steps=total_steps)
         # scheduler = CyclicLR(optimizer, base_lr=5.e-6, max_lr=5.e-5, step_size_up=657, cycle_momentum=False)
 
         model.zero_grad()
@@ -118,7 +138,7 @@ class Trainer():
                         neptune.log_metric('learning_rate_head', x=global_step, y=optimizer.param_groups[1]['lr'])
 
                 optimizer.step()
-                scheduler.step()  
+                scheduler.step()
                 model.zero_grad()
                 global_step += 1
 
