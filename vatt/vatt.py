@@ -51,7 +51,7 @@ class SelfAttention(nn.Module):
                 tkey(xs)
                 for tkey, xs in zip(self.key_transforms, Xs)
             ]
-        return T.stack(Z, dim=0)
+        return T.stack(Z, dim=1)
 
     def Tvalues(self, Xs: List[T.Tensor]) -> T.Tensor:
         #^ => [b, Vdim, layer]
@@ -65,7 +65,7 @@ class SelfAttention(nn.Module):
                 tlvalue(xs)
                 for tlvalue, xs in zip(self.value_transforms, Xs)
             ]
-        return T.stack(Z, dim=0)
+        return T.stack(Z, dim=2)
 
     def forward(self, Xs: List[T.Tensor], Q: T.Tensor) -> T.Tensor:
         #^ => [b, Vd] or [b, AdapterD]
