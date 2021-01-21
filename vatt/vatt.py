@@ -9,7 +9,7 @@ from AdaptersComponents.AdapterModules import AdapterModule
 
 
 class SelfAttention(nn.Module):
-    def __init__(self, args: dict, config):
+    def __init__(self, args: dict, config, debug_shapes=True):
         super().__init__()
 
         self.args = args
@@ -33,6 +33,12 @@ class SelfAttention(nn.Module):
         self.reduction = self.T / 1000.0
         self.adapter = AdapterModule(config.hidden_size, args['vatt-bottleneck_dim'])
         self.use_adapter = args['vatt-final-adapter']
+
+        self.do_debug_shapes = debug_shapes
+
+    def debug_shapes(self, tensor, name: str):
+        if self.do_debug_shapes:
+            print(f'{name}.shape=={tensor.shape}')
 
     def Tquery(self, query: T.Tensor) -> T.Tensor:
         #^ query: [batch, dim]
@@ -72,12 +78,16 @@ class SelfAttention(nn.Module):
         #^ Xs: [layer][batch, dim]
         #^ Q: [batch, dim]
         query = self.Tquery(Q)
+        self.debug_shapes(query, name='query')
         #^ query: [batch, Qdim]
         keys = self.Tkeys(Xs)
+        self.debug_shapes(keys, name='keys')
         #^ keys: [batch, layer, Qdim]
         values = self.Tvalues(Xs)
+        self.debug_shapes(values, name='values')
         #^ values: [batch, Vdim, layer]
         residual = Xs[-1]
+        self.debug_shapes(residual, name='residual')
         #^ residual: [batch, Vdim]
     
         values += residual[:, :, None]
@@ -87,6 +97,7 @@ class SelfAttention(nn.Module):
         # value_layer = self.value_transforms(value)
 
         attention_scores = T.matmul(query.unsqueeze(1), keys.transpose(-1, -2)).squeeze(dim=1)
+        self.debug_shapes(attention_scores, name='attention_scores')
         #^ [b, 1, Qd] matmul [b, (Qd, L)] => [b, L]
 
         attention_scores = self.dropout(attention_scores)
@@ -95,6 +106,7 @@ class SelfAttention(nn.Module):
         self.T = max(self.T - self.reduction, 1.0)
 
         context_layer = T.matmul(attention_probs.unsqueeze(1), values.transpose(-2, -1)).squeeze(dim=1)
+        self.debug_shapes(context_layer, name='context_layer')
         #^ [b, 1, L] matmul [b, (L, Vd)] => [b, Vd]
 
         if self.use_adapter: 
