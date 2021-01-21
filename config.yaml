@@ -25,6 +25,7 @@ max_ex_per_class: null # 200
 early_stopping: true
 early_stopping_patience: 10
 device: cuda # cuda # Choose between cpu and cuda
+handle_imbalance_sampler: true
 save_final_model: false
 checkpointing_on: false
 checkpointing_freq: 1 # Needs the argument above to be true

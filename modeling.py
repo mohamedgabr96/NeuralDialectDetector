@@ -51,7 +51,7 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(self.model_name_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels, cls_weights = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"], max_seq_len=self.configs["max_sequence_length"], balance_data_max_examples=self.configs["max_ex_per_class"], is_province=self.configs["is_province"], is_MSA=self.configs["is_MSA"])
+        train_loader, dev_loader, test_loader, no_labels, cls_weights = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"], max_seq_len=self.configs["max_sequence_length"], balance_data_max_examples=self.configs["max_ex_per_class"], is_province=self.configs["is_province"], is_MSA=self.configs["is_MSA"], sampler_imbalance=self.configs["handle_imbalance_sampler"])
         self.configs["num_labels"] = self.configs.get("num_labels", no_labels)
         self.configs["cls_weights"] = cls_weights
 
@@ -207,7 +207,7 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(model_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels, _ = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"], max_seq_len=self.configs["max_sequence_length"], balance_data_max_examples=self.configs["max_ex_per_class"], is_province=self.configs["is_province"], is_MSA=self.configs["is_MSA"])
+        train_loader, dev_loader, test_loader, no_labels, _ = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"], max_seq_len=self.configs["max_sequence_length"], balance_data_max_examples=self.configs["max_ex_per_class"], is_province=self.configs["is_province"], is_MSA=self.configs["is_MSA"], sampler_imbalance=self.configs["handle_imbalance_sampler"])
         self.configs["num_labels"] = self.configs.get("num_labels", no_labels)
 
         isTest_flag_for_dev_train = not (no_labels == self.configs["num_labels"])
@@ -266,7 +266,7 @@ class Trainer():
 if __name__ == "__main__":
 
     import sys
-    config_file_path = sys.argv[1]
+    config_file_path = "config.yaml"  # sys.argv[1]
 
     trainer_class = Trainer(config_file_path=config_file_path)
     # trainer_class.train()
