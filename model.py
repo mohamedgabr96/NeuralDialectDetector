@@ -74,8 +74,8 @@ class ArabicDialectBERT(BertPreTrainedModel):
         
         if self.args['use_vert_att']:
             iatt = [layer[:,0,:] for layer in outputs[2]]
-            new_feats = self.attend_vertical(Xs=iatt, Q=pooled_output)
-            pooled_output = self.bert.pooler(new_feats)
+            pooled_output = self.attend_vertical(Xs=iatt, Q=pooled_output)
+            # pooled_output = self.bert.pooler(new_feats)
 
         logits = self.classif_head(pooled_output)
 

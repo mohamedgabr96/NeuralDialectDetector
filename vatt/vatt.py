@@ -37,7 +37,7 @@ class SelfAttention(nn.Module):
         if self.is_keys_positional:
             key_size = self.nb_layers + 6
             self.StaticKeys = [
-                T.rand(key_size)
+                T.rand(key_size).cuda()
                 for _ in range(self.nb_layers)
             ]
             shared_key_transform = nn.Linear(key_size, config.hidden_size)
