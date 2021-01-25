@@ -10,11 +10,11 @@ def save_yaml_file(content, path):
 config_file_path = "./config.yaml"
 config_file_open = read_yaml_file(config_file_path)
 
-for max_seq_len in [110]:
+for max_seq_len in [90, 100, 110]:
 
     config_file_open["max_sequence_length"] = max_seq_len
-    config_file_open["neptune_experiment_name"] = f"MARBERT_MSA_Province_{max_seq_len}"
-    config_file_open["run_title"] = f"MARBERT_MSA_Province_{max_seq_len}"
+    config_file_open["neptune_experiment_name"] = f"MARBERT_DA_Country_Acc_{max_seq_len}"
+    config_file_open["run_title"] = f"MARBERT_DA_Country_Acc_{max_seq_len}"
     
     save_yaml_file(config_file_open, config_file_path)
     

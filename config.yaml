@@ -1,71 +1,61 @@
-run_title: MARBERT_100_invsqrt_50
-path_to_data: NADI2021_DEV.1.0/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
-is_province: false
-is_MSA: false
-checkpointing_path: checkpoints_marbert
-# model_name_path: checkpoints_4/adapter_fusion_Libya
-# model_name_path: checkpoints/adapter_bert_arabic_w_pretrainedfusionstuff-20210105T124954Z-001/adapter_bert_arabic_w_pretrainedfusionstuff
-# model_name_path: checkpoints_regions/RegionClassifier
-# model_name_path: checkpoints_regions/RegionClassifier_MARBERT
-# model_name_path: checkpoints_regions/Khaleegi
-# model_name_path: checkpoints/ArabicBERTBaselineAdapters_ALL_Regional2
-# model_name_path: checkpoints_marbert_fusion/Libya_adapter_fusion
-# model_name_path: checkpoints_marbert/mabert_adapter_plain-20210112T080156Z-001/mabert_adapter_plain
-model_name_path: UBC-NLP/MARBERT
-model_class: ArabicDialectBERT #ArabicDialectBERT #ArabicDialectBERTMaskedLM  
-masking_percentage: 0.0 # Applies when training w MLM
-batch_size: 32 # 64
-max_sequence_length: 100
-classif_dropout_rate: 0.3
-initial_learning_rate: 5.e-5
 adam_epsilon: 1.0e-08
-warmup_steps: 250
-lr-mini-epoch-size: 50
-num_epochs: 10 # 10
-max_ex_per_class: null # 200
+adapter_type: plain_adapter
+batch_size: 32
+bottleneck_dim: 384
+checkpoint_on_improvement: true
+checkpointing_freq: 1
+checkpointing_on: false
+checkpointing_path: checkpoints_marbert
+class_index: -1
+classif_dropout_rate: 0.3
+current_adapter_to_train: 6
+device: cuda
 early_stopping: true
 early_stopping_patience: 10
-device: cuda # cuda # Choose between cpu and cuda
 handle_imbalance_sampler: false
-save_final_model: false
-checkpointing_on: false
-checkpointing_freq: 1 # Needs the argument above to be true
-checkpoint_on_improvement: true
-improvement_check_freq: 100 #1313 # Needs the argument above to be true
-seed_list: [1234, 611, 520, 300, 760, 42, 1111, 1234, 10, 1, 20, 5, 2, 100, 512]
-# one_class_filtration: null
-# indexes_filtration_path: "checkpoints_regions/RegionClassifier_MARBERT"
+improvement_check_freq: 100
 indexes_filtration_path: null
-class_index: -1
-one_class_filtration: null
-use_regional_mapping: false
-# one_class_filtration: ["Kuwait", "Oman", "United_Arab_Emirates", "Saudi_Arabia", "Bahrain", "Yemen", "Qatar"] #  0
-# one_class_filtration: ["Egypt", "Sudan"] # 1
-# one_class_filtration: ["Lebanon", "Jordan", "Palestine", "Syria"] # 2
-# one_class_filtration: ["Tunisia", "Libya", "Algeria", "Morocco"] # 3
-# one_class_filtration: ["Iraq"] # 4
-# one_class_filtration: ["Somalia", "Djibouti", "Mauritania"] # 5
-# seed_list: [760]
+initial_learning_rate: 5.0e-05
+is_MSA: false
+is_province: false
+lr-mini-epoch-size: 50
+masking_percentage: 0
+max_ex_per_class: null
+max_sequence_length: 110
+model_class: ArabicDialectBERT
+model_name_path: UBC-NLP/MARBERT
+neptune_experiment_name: MARBERT_DA_Country_Acc_110
 neptuneaiAPI: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsImFwaV91cmwiOiJodHRwczovL3VpLm5lcHR1bmUuYWkiLCJhcGlfa2V5IjoiYzNlOTI4MDUtMWEwMC00N2U3LWEzYTAtZjAyMzA2YzE1YjI3In0=
-neptune_experiment_name: "MARBERT_100_invsqrt_50"
+no_total_adapters: 21
+num_epochs: 10
+one_class_filtration: null
+path_to_data: NADI2021_DEV.1.0/NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
+run_title: MARBERT_DA_Country110
+save_final_model: false
+seed_list:
+- 1234
+- 611
+- 520
+- 300
+- 760
+- 42
+- 1111
+- 1234
+- 10
+- 1
+- 20
+- 5
+- 2
+- 100
+- 512
+stage_2_training: true
+use_adapt_after_fusion: true
+use_adapters: true
 use_neptune: true
-
-## VAT settings
-vatt-use-common-transform: false 
+use_regional_mapping: false
+use_vert_att: false
 vatt-bottleneck_dim: 384
 vatt-final-adapter: false
 vatt-positional-keys: true
-use_vert_att: false 
-
-## Adapter settings
-
-## Settings for all adapts
-use_adapters: true
-adapter_type: plain_adapter # Fusion #Fusion #
-bottleneck_dim: 384
-
-## settings for fusion
-current_adapter_to_train: 6 # We will use same order as classes txt
-no_total_adapters: 21
-stage_2_training: true
-use_adapt_after_fusion: true # applies only with stage 2 training
+vatt-use-common-transform: false
+warmup_steps: 250
