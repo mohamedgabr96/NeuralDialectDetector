@@ -20,11 +20,11 @@ class InvSqrtLR(LambdaLR):
             num_warmup: int, max_factor: float = np.inf, min_factor: float = 0.0,
             mini_epoch_size=1,
     ):
-        super().__init__(optim, self.lr_lambda)
         self.num_warmup = num_warmup
         self.max_factor = max_factor
         self.min_factor = min_factor
         self.mini_epoch_sz = mini_epoch_size
+        super().__init__(optim, self.lr_lambda)
 
     def lr_lambda(self, iteration: int) -> float:
         iteration = iteration // self.mini_epoch_sz
