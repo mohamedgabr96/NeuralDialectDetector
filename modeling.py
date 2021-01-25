@@ -37,8 +37,8 @@ class InvSqrtLR(LambdaLR):
             step = (self.max_factor - self.min_factor) / float(self.num_warmup)
             fac  = iteration * step
         else:
-            fac = 1. / np.sqrt(iteration)
-            fac = np.clip(fac, a_min=self.min_factor, a_max=self.max_factor)
+            fac = self.max_factor / np.sqrt(iteration)
+            fac = max(fac, a_min=self.min_factor)
         neptune.log_metric('InvSqrtLR_factor', x=global_step, y=fac)
         return fac
 
