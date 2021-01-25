@@ -23,6 +23,8 @@ class MappedDropout(nn.Module):
         self.keep_rates: T.Tensor = 1. - drop_rates
 
     def forward(self, X: T.Tensor, y: T.Tensor):
+        if not self.training:
+            return X
         rates = self.keep_rates[y].unsqueeze(1)
         #^ rates: [b, 1] float
         Xshape = X.shape
@@ -48,6 +50,8 @@ class BalancedDropout(nn.Module):
             self.drop = MappedDropout(drop_rates)
 
     def forward(self, X, y):
+        if not self.training:
+            return X
         return self.drop(X, y)
 
 def minmax_norm(x: T.Tensor) -> T.Tensor:
