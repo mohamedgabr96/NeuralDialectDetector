@@ -55,13 +55,13 @@ class SelfAttention(nn.Module):
             elif self.positional_keys_mode == 'sinosoid':
                 self.StaticKeys = []
                 di = T.arange(key_size)
-                di = (di // 2).type(float) / key_size
-                di = 1 / T.pow(100, di)
+                di = (di // 2).type(T.float32) / key_size
+                di = T.div(1.0, T.pow(100, di))
                 for ilayer in range(self.nb_layers):
                     enc = di * ilayer
                     enc[0::2].sin_()
                     enc[1::2].cos_()
-                    self.StaticKeys.append(enc)
+                    self.StaticKeys.append(enc.cuda())
             else:
                 raise KeyError(f"Unknown positional key mode: {self.positional_keys_mode}.")
             shared_key_transform = EnhancedLinear(key_size, config.hidden_size)
