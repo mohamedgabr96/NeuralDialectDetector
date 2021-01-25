@@ -7,6 +7,23 @@ from torch import nn
 from transformers.models.bert.modeling_bert import BertSelfOutput, BertOutput, BertAttention, BertLayer
 from AdaptersComponents.AdapterModules import AdapterModule
 
+class EnhancedLinear(nn.Module):
+    '''"Stop thinking with your head. -- SMerity'''
+    def __init__(
+            self,
+            Din: int,
+            Dout: int,
+    ):
+        self.Din = Din
+        self.Dout = Dout
+    
+        self.static = nn.Parameter(T.ones(self.Dout), requires_grad=True)
+        self.linear = nn.Linear(self.Din, self.Dout * 2)
+
+    def forward(self, X: T.Tensor) -> T.Tensor:
+        mag, sgn = self.linear(X).chunk(2, dim=-1)
+        Z = self.static * mag.sigmoid() * sgn.tanh()
+        return Z
 
 class SelfAttention(nn.Module):
     def __init__(self, args: dict, config):
@@ -19,28 +36,35 @@ class SelfAttention(nn.Module):
         self.T = 1
         self.reduction = self.T / 1000.0
         self.use_adapter = args['vatt-final-adapter']
-        self.is_keys_positional = args['vatt-positional-keys']
+        self.positional_keys_mode = args['vatt-positional-keys']
 
-        self.build()
+        self.build_()
 
         self.do_debug_shapes = args.get('vatt-debug-shapes', False)
 
-    def build(self):
+    def build_key_transform_(self):
         args = self.args
         config = self.config
-        self.dropout = nn.Dropout(0.1)
-        self.dense   = nn.Linear(config.hidden_size, 1)
-        self.query   = nn.Linear(config.hidden_size, config.hidden_size)
-        if self.use_common_transform:
-            self.key_c   = nn.Linear(config.hidden_size, config.hidden_size)
-            self.value_c = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
-        if self.is_keys_positional:
-            key_size = self.nb_layers + 6
-            self.StaticKeys = [
-                T.rand(key_size).cuda()
-                for _ in range(self.nb_layers)
-            ]
-            shared_key_transform = nn.Linear(key_size, config.hidden_size)
+        if self.positional_keys_mode:
+            key_size = self.nb_layers * 2
+            if self.positional_keys_mode == 'random':
+                self.StaticKeys = [
+                    T.rand(key_size).cuda()
+                    for _ in range(self.nb_layers)
+                ]
+            elif self.positional_keys_mode == 'sinosoid':
+                self.StaticKeys = []
+                di = T.arange(key_size)
+                di = (di // 2).type(float) / key_size
+                di = 1 / T.pow(100, di)
+                for ilayer in range(self.nb_layers):
+                    enc = di * ilayer
+                    enc[0::2].sin_()
+                    enc[1::2].cos_()
+                    self.StaticKeys.append(enc)
+            else:
+                raise KeyError(f"Unknown positional key mode: {self.positional_keys_mode}.")
+            shared_key_transform = EnhancedLinear(key_size, config.hidden_size)
             self.key_transforms = nn.ModuleList([
                 shared_key_transform
                 for _ in range(self.nb_layers)
@@ -50,12 +74,22 @@ class SelfAttention(nn.Module):
                 nn.Linear(config.hidden_size, config.hidden_size)
                 for _ in range(self.nb_layers)
             ])
+
+    def build_(self):
+        args = self.args
+        config = self.config
+        self.dropout = nn.Dropout(0.1)
+        self.dense   = nn.Linear(config.hidden_size, 1)
+        self.query   = nn.Linear(config.hidden_size, config.hidden_size)
+        if self.use_common_transform:
+            self.key_c   = nn.Linear(config.hidden_size, config.hidden_size)
+            self.value_c = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
+        self.build_key_transform_()
         self.value_transforms   = nn.ModuleList([
             nn.Linear(config.hidden_size, config.hidden_size, bias=False)
             for _ in range(self.nb_layers)
         ])
         self.adapter = AdapterModule(config.hidden_size, args['vatt-bottleneck_dim'])
-
 
     def debug_shapes(self, tensor, name: str):
         if self.do_debug_shapes:
@@ -67,21 +101,17 @@ class SelfAttention(nn.Module):
         return self.query(query)
 
     def Tkeys(self, Xs: List[T.Tensor]) -> T.Tensor:
-        if self.is_keys_positional:
+        if self.positional_keys_mode:
             Xs = self.StaticKeys
             #^ Xs: [layer][KeySize]
             Xs = [xs.unsqueeze(0) for xs in Xs]
             #^ Xs: [layer][1, KeySize]
-        if self.use_common_transform:
-            Z = [
-                self.key_c(tkey(xs))
-                for tkey, xs in zip(self.key_transforms, Xs)
-            ]
-        else:
-            Z = [
-                tkey(xs)
-                for tkey, xs in zip(self.key_transforms, Xs)
-            ]
+        Z = [
+            self.key_c(tkey(xs))
+            if self.use_common_transform
+            else tkey(xs)
+            for tkey, xs in zip(self.key_transforms, Xs)
+        ]
         return T.stack(Z, dim=1)
         #^ => [b|1, layer, Qdim]
 
