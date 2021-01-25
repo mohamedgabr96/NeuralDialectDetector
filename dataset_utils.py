@@ -27,7 +27,7 @@ class NADIDataset(torch.utils.data.Dataset):
 
 
 def parse_classes_list(path_to_folder, is_province=False):
-    filename = "classes_22.txt" if is_province else "classes.txt"
+    filename = "classes_22.txt" if is_province else "classes_12.txt"
     classes_path = os.path.join(path_to_folder, filename)
     with open(classes_path, encoding="utf-8") as file_open:
         lines = file_open.readlines()
@@ -104,7 +104,7 @@ def prepare_random_sampler(classes_list):
     weight = 1. / class_sample_count
     samples_weight = np.array([weight[t] for t in classes_list])
     samples_weight = torch.from_numpy(samples_weight)
-    samples_weigth = samples_weight.double()
+    samples_weight = samples_weight.double()
     sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
     return sampler
 
