@@ -7,7 +7,7 @@ def read_from_file(file_in):
     df = pd.read_csv(file_in, delimiter="\t")
     return df
 
-# indices_list = [60, 80, 100, 110, 120]
+indices_list = [90, 100, 110, "100_VAT"]
 # indices_list = [90, 110]
 # indices_list = [90, 100]
 indices_list = [90, 100, 110, "100_VAT_1"]

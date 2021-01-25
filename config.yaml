@@ -49,6 +49,13 @@ neptuneaiAPI: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsImFwaV91cmwiOi
 neptune_experiment_name: "MARBERT_100_1"
 use_neptune: true
 
+## VAT settings
+vatt-use-common-transform: false 
+vatt-bottleneck_dim: 384
+vatt-final-adapter: false
+vatt-positional-keys: true
+use_vert_att: true 
+
 ## Adapter settings
 
 ## Settings for all adapts
