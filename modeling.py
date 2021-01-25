@@ -19,7 +19,7 @@ global_step = 0
 class InvSqrtLR(LambdaLR):
     def __init__(
             self, optim,
-            num_warmup: int, max_factor: float = np.inf, min_factor: float = 0.0,
+            num_warmup: int, max_factor: float = 10, min_factor: float = 0.01,
             mini_epoch_size=1,
     ):
         super().__init__(optim, self.lr_lambda)
@@ -32,8 +32,13 @@ class InvSqrtLR(LambdaLR):
 
     def lr_lambda(self, iteration: int) -> float:
         iteration = iteration // self.mini_epoch_sz
-        fac = 1. / np.sqrt(max(self.num_warmup, iteration))
-        fac: int = np.clip(fac, a_min=self.min_factor, a_max=self.max_factor)
+        
+        if iteration < self.num_warmup:
+            step = (self.max_factor - self.min_factor) / float(self.num_warmup)
+            fac  = iteration * step
+        else:
+            fac = 1. / np.sqrt(iteration)
+            fac = np.clip(fac, a_min=self.min_factor, a_max=self.max_factor)
         neptune.log_metric('InvSqrtLR_factor', x=global_step, y=fac)
         return fac
 
