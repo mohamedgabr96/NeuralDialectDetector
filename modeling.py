@@ -14,6 +14,8 @@ from torch.optim.lr_scheduler import CyclicLR, LambdaLR
 
 logger = logging.getLogger(__name__)
 
+global_step = 0
+
 class InvSqrtLR(LambdaLR):
     def __init__(
             self, optim,
@@ -26,10 +28,13 @@ class InvSqrtLR(LambdaLR):
         self.mini_epoch_sz = mini_epoch_size
         super().__init__(optim, self.lr_lambda)
 
+        logger.info(f'InvSqrtLR dict: {self.__dict__}')
+
     def lr_lambda(self, iteration: int) -> float:
         iteration = iteration // self.mini_epoch_sz
         fac = 1. / np.sqrt(max(self.num_warmup, iteration))
-        fac = np.clip(fac, a_min=self.min_factor, a_max=self.max_factor)
+        fac: int = np.clip(fac, a_min=self.min_factor, a_max=self.max_factor)
+        neptune.log_metric('InvSqrtLR_factor', x=global_step, y=fac)
         return fac
 
 class Trainer():
@@ -110,6 +115,7 @@ class Trainer():
 
         #assert no_labels == self.configs["num_labels"] or no_epochs==0, "Specified Number of Labels Not Equal to Labels in Model"
 
+        global global_step
         global_step = 0
         training_loss = 0.0
         best_dev_loss = np.inf
