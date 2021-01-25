@@ -38,7 +38,7 @@ class InvSqrtLR(LambdaLR):
             fac  = iteration * step
         else:
             fac = self.max_factor / np.sqrt(iteration)
-            fac = max(fac, a_min=self.min_factor)
+            fac = max(fac, self.min_factor)
         neptune.log_metric('InvSqrtLR_factor', x=global_step, y=fac)
         return fac
 
