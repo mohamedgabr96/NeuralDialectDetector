@@ -37,8 +37,8 @@ class InvSqrtLR(LambdaLR):
             step = (self.max_factor - self.min_factor) / float(self.num_warmup)
             fac  = iteration * step
         else:
-            fac = 1. / np.sqrt(iteration)
-            fac = np.clip(fac, a_min=self.min_factor, a_max=self.max_factor)
+            fac = self.max_factor / np.sqrt(iteration)
+            fac = max(fac, a_min=self.min_factor)
         neptune.log_metric('InvSqrtLR_factor', x=global_step, y=fac)
         return fac
 
@@ -105,9 +105,11 @@ class Trainer():
                     'lr': 1.e-3 #5.e-5
                 }
             ], lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
+        mini_epoch_size = self.configs.get('lr-mini-epoch-size', 1)
         scheduler = InvSqrtLR(optimizer,
-            num_warmup=self.configs["warmup_steps"],
-            mini_epoch_size=self.configs.get('lr-mini-epoch-size', 1))
+            num_warmup=self.configs["warmup_steps"] // mini_epoch_size,
+            mini_epoch_size=mini_epoch_size,
+        )
         # scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.configs["warmup_steps"], num_training_steps=total_steps)
         # scheduler = CyclicLR(optimizer, base_lr=5.e-6, max_lr=5.e-5, step_size_up=657, cycle_momentum=False)
 
