@@ -59,6 +59,7 @@ use_regional_mapping: false
 use_vert_att: false
 vatt-bottleneck_dim: 384
 vatt-final-adapter: false
-vatt-positional-keys: true
+vatt-positional-keys: 'sinosoid'
+# vatt-positional-keys: 'random'
 vatt-use-common-transform: false
 warmup_steps: 250
