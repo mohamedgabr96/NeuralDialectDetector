@@ -1,29 +1,29 @@
-from typing import Dict, List
-from sklearn.tree import DecisionTreeClassifier
 import os
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.svm import LinearSVC
-from sklearn.linear_model import SGDClassifier
-from collections import Counter, defaultdict
-from sklearn.metrics import accuracy_score, f1_score
-
-import pandas as pd
 import pickle
+from collections import Counter, defaultdict
 from glob import glob
-import numpy as np
-from sklearn.model_selection import train_test_split
-from tqdm import tqdm
-
 from itertools import chain, combinations
+from typing import Dict, List
+
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
+from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import accuracy_score, f1_score
+from sklearn.model_selection import train_test_split
+from sklearn.svm import LinearSVC
+from sklearn.tree import DecisionTreeClassifier
+from tqdm import tqdm
 
 
 def powerset(iterable):
-    "powerset([1,2,3]) --> (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+    "powerset([1,2,3]) --> [(1,), (2,), (3,), (1,2), (1,3), (2,3), (1,2,3)]"
     s = list(iterable)
-    return chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1))
+    return list(chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1)))
 
 
 def get_id(path: str) -> str:
+    """Convert file path into an id."""
     return (
         os.path.basename(path)
         .replace(".tsv", "")
@@ -33,6 +33,7 @@ def get_id(path: str) -> str:
 
 
 def load(s: str) -> np.ndarray:
+    """Parse array string into a numpy vector."""
     return np.array(s[1:-1].split(), dtype=np.float)
 
 
@@ -108,6 +109,18 @@ def majority(x):
     return result
 
 
+def compute_scores(y_true: List[str], y_pred: List[str], models: List[str]):
+    acc = accuracy_score(y_true, y_pred)
+    f1_micro = f1_score(y_true, y_pred, average="micro")
+    f1_macro = f1_score(y_true, y_pred, average="macro")
+    if f1_macro > 0.325:
+        print(f"Models  : {list(models)}")
+        print(f"Accuracy: {acc}")
+        print(f"F1 Micro: {f1_micro}")
+        print(f"F1 Macro: {f1_macro}")
+        print()
+
+
 def main():
     train_paths = sorted(
         glob("D:/Downloads/Train Dumps/Train Dumps/predictions_train_*.tsv")
@@ -121,39 +134,23 @@ def main():
 
     print("Majority")
 
-    for c in tqdm(list(powerset(list(map(get_id, valid_paths))))):
-        y_hat = majority(df_valid[list(c)].values)
-        y = df_valid["y"].values
-        acc = accuracy_score(y, y_hat)
-        f1_micro = f1_score(y, y_hat, average="micro")
-        f1_macro = f1_score(y, y_hat, average="macro")
-        if f1_macro > 0.325:
-            print(f"Models  : {list(c)}")
-            print(f"Accuracy: {acc}")
-            print(f"F1 Micro: {f1_micro}")
-            print(f"F1 Macro: {f1_macro}")
-            print()
+    for c in tqdm(powerset(list(map(get_id, valid_paths)))):
+        y_pred = majority(df_valid[list(c)].values)
+        y_true = df_valid["y"].values
+        compute_scores(y_true, y_pred, list(c))
 
     print("Model")
 
-    for c in tqdm(list(powerset(list(map(get_id, train_paths))))):
-        model = SGDClassifier()
+    for c in tqdm(powerset(list(map(get_id, train_paths)))):
+        model = RandomForestClassifier()
         X_train = df_train[list(c)].values
         y_train = df_train["y"].values
         X_valid = df_valid[list(c)].values
-        y_valid = df_valid["y"].values
+        y_true = df_valid["y"].values
 
         model.fit(X_train, y_train)
-        y_hat = majority(X_valid)
-        acc = accuracy_score(y_valid, y_hat)
-        f1_micro = f1_score(y_valid, y_hat, average="micro")
-        f1_macro = f1_score(y_valid, y_hat, average="macro")
-        if f1_macro > 0.325:
-            print(f"Models  : {list(c)}")
-            print(f"Accuracy: {acc}")
-            print(f"F1 Micro: {f1_micro}")
-            print(f"F1 Macro: {f1_macro}")
-            print()
+        y_pred = model.predict(X_valid)
+        compute_scores(y_true, y_pred, list(c))
 
 
 if __name__ == "__main__":
