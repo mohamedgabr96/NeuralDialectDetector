@@ -23,9 +23,10 @@ class ClassificationHead(nn.Module):
             self.linear = nn.Linear(input_dim, num_labels)  # Simple Head for Now
         else:
             self.linear = nn.Sequential(
-                nn.Linear(input_dim, input_dim),
+                nn.Linear(input_dim, input_dim // 2),
                 nn.ReLU(),
-                nn.Linear(input_dim, num_labels)
+                self.dropout,
+                nn.Linear(input_dim // 2, num_labels)
             )
 
     def forward(self, x):
