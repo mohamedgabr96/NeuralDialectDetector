@@ -14,22 +14,32 @@ from torch.optim.lr_scheduler import CyclicLR, LambdaLR
 
 logger = logging.getLogger(__name__)
 
+global_step = 0
+
 class InvSqrtLR(LambdaLR):
     def __init__(
             self, optim,
-            num_warmup: int, max_factor: float = np.inf, min_factor: float = 0.0,
+            num_warmup: int, max_factor: float = 10, min_factor: float = 0.01,
             mini_epoch_size=1,
     ):
-        super().__init__(optim, self.lr_lambda)
         self.num_warmup = num_warmup
         self.max_factor = max_factor
         self.min_factor = min_factor
         self.mini_epoch_sz = mini_epoch_size
+        super().__init__(optim, self.lr_lambda)
+
+        logger.info(f'InvSqrtLR dict: {self.__dict__}')
 
     def lr_lambda(self, iteration: int) -> float:
         iteration = iteration // self.mini_epoch_sz
-        fac = 1. / np.sqrt(max(self.num_warmup, iteration))
-        fac = np.clip(fac, a_min=self.min_factor, a_max=self.max_factor)
+        
+        if iteration < self.num_warmup:
+            step = (self.max_factor - self.min_factor) / float(self.num_warmup)
+            fac  = iteration * step
+        else:
+            fac = self.max_factor / np.sqrt(1 + iteration - self.num_warmup)
+            fac = max(fac, self.min_factor)
+        neptune.log_metric('InvSqrtLR_factor', x=global_step, y=fac)
         return fac
 
 class Trainer():
@@ -68,7 +78,7 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(self.model_name_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels, cls_weights = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"], max_seq_len=self.configs["max_sequence_length"], balance_data_max_examples=self.configs["max_ex_per_class"], is_province=self.configs["is_province"], is_MSA=self.configs["is_MSA"])
+        train_loader, dev_loader, test_loader, no_labels, cls_weights = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"], max_seq_len=self.configs["max_sequence_length"], balance_data_max_examples=self.configs["max_ex_per_class"], is_province=self.configs["is_province"], is_MSA=self.configs["is_MSA"], sampler_imbalance=self.configs["handle_imbalance_sampler"])
         self.configs["num_labels"] = self.configs.get("num_labels", no_labels)
         self.configs["cls_weights"] = cls_weights
 
@@ -95,9 +105,11 @@ class Trainer():
                     'lr': 1.e-3 #5.e-5
                 }
             ], lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
+        mini_epoch_size = self.configs.get('lr-mini-epoch-size', 1)
         scheduler = InvSqrtLR(optimizer,
-            num_warmup=self.configs["warmup_steps"],
-            mini_epoch_size=self.configs.get('lr-mini-epoch-size', 1))
+            num_warmup=self.configs["warmup_steps"] // mini_epoch_size,
+            mini_epoch_size=mini_epoch_size,
+        )
         # scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.configs["warmup_steps"], num_training_steps=total_steps)
         # scheduler = CyclicLR(optimizer, base_lr=5.e-6, max_lr=5.e-5, step_size_up=657, cycle_momentum=False)
 
@@ -110,6 +122,7 @@ class Trainer():
 
         #assert no_labels == self.configs["num_labels"] or no_epochs==0, "Specified Number of Labels Not Equal to Labels in Model"
 
+        global global_step
         global_step = 0
         training_loss = 0.0
         best_dev_loss = np.inf
@@ -227,7 +240,7 @@ class Trainer():
         model_config = AutoConfig.from_pretrained(model_path)
 
         # Generate Loaders
-        train_loader, dev_loader, test_loader, no_labels, _ = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"], max_seq_len=self.configs["max_sequence_length"], balance_data_max_examples=self.configs["max_ex_per_class"], is_province=self.configs["is_province"], is_MSA=self.configs["is_MSA"])
+        train_loader, dev_loader, test_loader, no_labels, _ = parse_and_generate_loaders(self.configs["path_to_data"], tokenizer, batch_size=self.configs["batch_size"], masking_percentage=self.configs["masking_percentage"], class_to_filter=self.configs["one_class_filtration"], filter_w_indexes=self.configs["indexes_filtration_path"], pred_class=self.configs["class_index"], use_regional_mapping=self.configs["use_regional_mapping"], max_seq_len=self.configs["max_sequence_length"], balance_data_max_examples=self.configs["max_ex_per_class"], is_province=self.configs["is_province"], is_MSA=self.configs["is_MSA"], sampler_imbalance=self.configs["handle_imbalance_sampler"])
         self.configs["num_labels"] = self.configs.get("num_labels", no_labels)
 
         isTest_flag_for_dev_train = not (no_labels == self.configs["num_labels"])
@@ -286,7 +299,7 @@ class Trainer():
 if __name__ == "__main__":
 
     import sys
-    config_file_path = sys.argv[1]
+    config_file_path = "config.yaml"  # sys.argv[1]
 
     trainer_class = Trainer(config_file_path=config_file_path)
     # trainer_class.train()

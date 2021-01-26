@@ -10,9 +10,11 @@ def read_from_file(file_in):
 indices_list = [90, 100, 110, "100_VAT"]
 # indices_list = [90, 110]
 # indices_list = [90, 100]
-run_id = 6
+# indices_list = [90, 100, 110, "100_VAT_1"]
+indices_list = [90, 100, 110]
+run_id = 1
 
-files_in = [f"/home/bkhmsi/Documents/Projects/NeuralDialectDetector/checkpoints_marbert/MARBERT_{i}/predictions_dev.tsv" for i in indices_list]
+files_in = [f"/home/bkhmsi/Documents/Projects/NeuralDialectDetector/checkpoints_marbert/MARBERT_DA_Country{i}/predictions_dev.tsv" for i in indices_list]
 
 df_list = []
 for i in files_in:

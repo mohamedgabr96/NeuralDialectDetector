@@ -1,7 +1,7 @@
 import torch
 import logging
 import os
-from torch.utils.data import TensorDataset, RandomSampler
+from torch.utils.data import TensorDataset, RandomSampler, WeightedRandomSampler
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -99,7 +99,16 @@ def balance_data(data_examples, max_examples):
     return new_data_list
 
 
-def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", random_sampler=True, masking_percentage=0.2, class_to_filter=None, regional_mapping=None, filter_w_indexes=None, pred_class=-1, max_seq_len=128, balance_data_max_examples=None, is_province=False, is_MSA=False):
+def prepare_random_sampler(classes_list):
+    class_sample_count = np.array([len(np.where(classes_list == t)[0]) for t in np.unique(classes_list)])
+    weight = 1. / class_sample_count
+    samples_weight = np.array([weight[t] for t in classes_list])
+    samples_weight = torch.from_numpy(samples_weight)
+    samples_weight = samples_weight.double()
+    sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
+    return sampler
+
+def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", random_sampler=True, masking_percentage=0.2, class_to_filter=None, regional_mapping=None, filter_w_indexes=None, pred_class=-1, max_seq_len=128, balance_data_max_examples=None, is_province=False, is_MSA=False, handle_imbalance_sampler=False):
     index_path = os.path.join(filter_w_indexes, f"predictions_{split_set}.tsv") if filter_w_indexes is not None else None
     
     arabic_type = "MSA" if is_MSA else "DA"
@@ -108,13 +117,16 @@ def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_li
     if balance_data_max_examples is not None:
         data_examples = balance_data(data_examples, balance_data_max_examples)
 
-    dataset = load_and_cache_examples(data_examples, tokenizer, classes_list, is_province=is_province, max_seq_len=max_seq_len, masking_percentage=masking_percentage)
-    data_sampler = RandomSampler(dataset) if random_sampler else None
-    generator = torch.utils.data.DataLoader(dataset, shuffle=not random_sampler, sampler=data_sampler, **params)
+    dataset, imbalance_handling_sampler = load_and_cache_examples(data_examples, tokenizer, classes_list, is_province=is_province, max_seq_len=max_seq_len, masking_percentage=masking_percentage)
+    if handle_imbalance_sampler:
+        data_sampler = imbalance_handling_sampler
+    else:
+        data_sampler = RandomSampler(dataset) if random_sampler else None
+    generator = torch.utils.data.DataLoader(dataset, sampler=data_sampler, **params)  # shuffle=not random_sampler,
     return generator
 
 
-def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, masking_percentage=0.2, class_to_filter=None, regional_mapping=None, filter_w_indexes=None, pred_class=-1, use_regional_mapping=False, max_seq_len=128, balance_data_max_examples=None, is_province=False, is_MSA=False):
+def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, masking_percentage=0.2, class_to_filter=None, regional_mapping=None, filter_w_indexes=None, pred_class=-1, use_regional_mapping=False, max_seq_len=128, balance_data_max_examples=None, is_province=False, is_MSA=False, sampler_imbalance=False):
     params = {'batch_size': batch_size}
     params_dev = {'batch_size': batch_size // 2}
     regional_mapping_content = parse_mapping_list(path_to_data_folder) if use_regional_mapping else None
@@ -126,9 +138,9 @@ def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, mas
         classes_list.sort()
         print("Classes that will run: ")
         print(classes_list)
-    training_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, max_seq_len=max_seq_len, balance_data_max_examples=balance_data_max_examples, is_province=is_province, is_MSA=is_MSA)
-    dev_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params_dev, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, max_seq_len=max_seq_len, is_province=is_province, is_MSA=is_MSA)
-    test_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params_dev, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, filter_w_indexes=filter_w_indexes, pred_class=pred_class, max_seq_len=max_seq_len, is_province=is_province, is_MSA=is_MSA)
+    training_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, max_seq_len=max_seq_len, balance_data_max_examples=balance_data_max_examples, is_province=is_province, is_MSA=is_MSA, handle_imbalance_sampler=sampler_imbalance)
+    dev_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params_dev, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, max_seq_len=max_seq_len, is_province=is_province, is_MSA=is_MSA, handle_imbalance_sampler=sampler_imbalance)
+    test_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params_dev, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, filter_w_indexes=filter_w_indexes, pred_class=pred_class, max_seq_len=max_seq_len, is_province=is_province, is_MSA=is_MSA, handle_imbalance_sampler=sampler_imbalance)
 
     return training_generator, dev_generator, test_generator, len(classes_list), None
 
@@ -148,9 +160,10 @@ def load_and_cache_examples(examples, tokenizer, classes_list, is_province, pad_
     all_input_ids_w_masking = torch.tensor([f[4] for f in features], dtype=torch.long)
     all_sentence_indices = torch.tensor([f[5] for f in features], dtype=torch.long)
     
+    imbalance_handling_sampler = prepare_random_sampler([f[3] for f in features])
     dataset = TensorDataset(all_input_ids, all_attention_mask,
                             all_token_type_ids, all_class_label_ids, all_input_ids_w_masking, all_sentence_indices)
-    return dataset
+    return dataset, imbalance_handling_sampler
 
 
 # From : https://github.com/monologg/JointBERT/blob/master/predict.py
