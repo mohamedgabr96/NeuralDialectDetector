@@ -21,11 +21,13 @@ class InvSqrtLR(LambdaLR):
             self, optim,
             num_warmup: int, max_factor: float = 10, min_factor: float = 0.01,
             mini_epoch_size=1,
+            temperature=1,
     ):
         self.num_warmup = num_warmup
         self.max_factor = max_factor
         self.min_factor = min_factor
         self.mini_epoch_sz = mini_epoch_size
+        self.temp = temperature
         super().__init__(optim, self.lr_lambda)
 
         logger.info(f'InvSqrtLR dict: {self.__dict__}')
@@ -37,7 +39,8 @@ class InvSqrtLR(LambdaLR):
             step = (self.max_factor - self.min_factor) / float(self.num_warmup)
             fac  = iteration * step
         else:
-            fac = self.max_factor / np.sqrt(1 + iteration - self.num_warmup)
+            it = 1 + iteration - self.num_warmup
+            fac = self.max_factor / np.sqrt(it / self.temp)
             fac = max(fac, self.min_factor)
         neptune.log_metric('InvSqrtLR_factor', x=global_step, y=fac)
         return fac
@@ -109,6 +112,9 @@ class Trainer():
         scheduler = InvSqrtLR(optimizer,
             num_warmup=self.configs["warmup_steps"] // mini_epoch_size,
             mini_epoch_size=mini_epoch_size,
+            min_factor=self.configs.get('inv-sqrt-lr-min-factor', 0.1),
+            max_factor=self.configs.get('inv-sqrt-lr-max-factor', 2),
+            temperature=self.configs.get('inv-sqrt-lr-temperature', 1)
         )
         # scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.configs["warmup_steps"], num_training_steps=total_steps)
         # scheduler = CyclicLR(optimizer, base_lr=5.e-6, max_lr=5.e-5, step_size_up=657, cycle_momentum=False)
