@@ -3,6 +3,7 @@ CairoSquad*
 config_linux.yaml
 checkpoints*
 .vscode 
+play/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
