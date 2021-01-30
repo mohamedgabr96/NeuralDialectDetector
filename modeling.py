@@ -39,12 +39,13 @@ class InvSqrtLR(LambdaLR):
         else:
             fac = self.max_factor / np.sqrt(1 + iteration - self.num_warmup)
             fac = max(fac, self.min_factor)
-        neptune.log_metric('InvSqrtLR_factor', x=global_step, y=fac)
+        # neptune.log_metric('InvSqrtLR_factor', x=global_step, y=fac)
         return fac
 
 class Trainer():
     def __init__(self, config_file_path="config.yaml"):
         self.configs = read_yaml_file(config_file_path)
+        self.n_epochs = self.configs["num_epochs"]
         self.model_name_path = self.configs["model_name_path"]
         logging.basicConfig(filename=os.path.join(self.configs["checkpointing_path"], 'training_log.log'), level=logging.DEBUG)
         if self.configs["use_neptune"]:
@@ -113,7 +114,7 @@ class Trainer():
         # scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.configs["warmup_steps"], num_training_steps=total_steps)
         # scheduler = CyclicLR(optimizer, base_lr=5.e-6, max_lr=5.e-5, step_size_up=657, cycle_momentum=False)
 
-        model.zero_grad()
+        # model.zero_grad()
 
         # Training Loop
         best_model_path = ""
@@ -271,8 +272,11 @@ class Trainer():
         return dict_of_results
 
     def train_and_evaluate_with_multiple_seeds(self, no_times, seeds_from_config=False, eval_on_train=True):
-        accuracy_agg, model_pathes = self.train_with_multiple_seeds(no_times, seeds_from_config=seeds_from_config)
-
+        if self.n_epochs > 0:
+            accuracy_agg, model_pathes = self.train_with_multiple_seeds(no_times, seeds_from_config=seeds_from_config)
+        else:
+            model_pathes = [self.model_name_path]
+            
         dict_of_seed_results = {}
         aggregation_dict = {"TRAIN": {"Accuracy": [], "Loss": []}, "DEV": {"Accuracy": [], "Loss": []}, "TEST": {"Accuracy": [], "Loss": []}}
         for index, path in enumerate(model_pathes):

@@ -16,10 +16,18 @@ from vatt import vatt
 class ClassificationHead(nn.Module):
     def __init__(self, input_dim, num_labels, dropout_rate=0.):
         super(ClassificationHead, self).__init__()
+        # self.head = nn.Sequential(
+        #     nn.Dropout(dropout_rate),
+        #     nn.Linear(input_dim, input_dim // 2),
+        #     nn.ReLU(),
+        #     nn.Dropout(dropout_rate),
+        #     nn.Linear(input_dim // 2, num_labels)
+        # )
         self.dropout = nn.Dropout(dropout_rate)
         self.linear = nn.Linear(input_dim, num_labels)  # Simple Head for Now
 
     def forward(self, x):
+        # return self.head(x)
         x = self.dropout(x)
         return self.linear(x)
 

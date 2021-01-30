@@ -112,12 +112,13 @@ def parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_li
     index_path = os.path.join(filter_w_indexes, f"predictions_{split_set}.tsv") if filter_w_indexes is not None else None
     
     arabic_type = "MSA" if is_MSA else "DA"
-    data_examples = parse_data(os.path.join(path_to_data_folder, f"{arabic_type}_{split_set}_labeled.tsv"), regional_mapping_content=regional_mapping, class_to_filter=class_to_filter, filter_w_indexes=index_path, pred_class=pred_class)
+    data_path = os.path.join(path_to_data_folder, f"{arabic_type}_{split_set}_labeled.tsv") if split_set != "test" else os.path.join(f"NADI2021_TEST.1.0/{os.path.basename(path_to_data_folder)}", f"{arabic_type}_test_unlabeled.tsv")
+    data_examples = parse_data(data_path, regional_mapping_content=regional_mapping, class_to_filter=class_to_filter, filter_w_indexes=index_path, pred_class=pred_class)
     
     if balance_data_max_examples is not None:
         data_examples = balance_data(data_examples, balance_data_max_examples)
 
-    dataset, imbalance_handling_sampler = load_and_cache_examples(data_examples, tokenizer, classes_list, is_province=is_province, max_seq_len=max_seq_len, masking_percentage=masking_percentage)
+    dataset, imbalance_handling_sampler = load_and_cache_examples(data_examples, tokenizer, classes_list, is_province=is_province, max_seq_len=max_seq_len, masking_percentage=masking_percentage, split_set=split_set)
     if handle_imbalance_sampler:
         data_sampler = imbalance_handling_sampler
     else:
@@ -140,17 +141,17 @@ def parse_and_generate_loaders(path_to_data_folder, tokenizer, batch_size=2, mas
         print(classes_list)
     training_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params, classes_list, split_set="train", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, max_seq_len=max_seq_len, balance_data_max_examples=balance_data_max_examples, is_province=is_province, is_MSA=is_MSA, handle_imbalance_sampler=sampler_imbalance)
     dev_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params_dev, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, max_seq_len=max_seq_len, is_province=is_province, is_MSA=is_MSA, handle_imbalance_sampler=sampler_imbalance)
-    test_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params_dev, classes_list, split_set="dev", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, filter_w_indexes=filter_w_indexes, pred_class=pred_class, max_seq_len=max_seq_len, is_province=is_province, is_MSA=is_MSA, handle_imbalance_sampler=sampler_imbalance)
+    test_generator = parse_and_generate_loader(path_to_data_folder, tokenizer, params_dev, classes_list, split_set="test", locale="ar", masking_percentage=masking_percentage, class_to_filter=class_to_filter, regional_mapping=regional_mapping_content, filter_w_indexes=filter_w_indexes, pred_class=pred_class, max_seq_len=max_seq_len, is_province=is_province, is_MSA=is_MSA, handle_imbalance_sampler=sampler_imbalance)
 
     return training_generator, dev_generator, test_generator, len(classes_list), None
 
 # From : https://github.com/monologg/JointBERT/blob/master/predict.py
-def load_and_cache_examples(examples, tokenizer, classes_list, is_province, pad_token_ignore_index=0, max_seq_len=128, masking_percentage=0.2):
+def load_and_cache_examples(examples, tokenizer, classes_list, is_province, pad_token_ignore_index=0, max_seq_len=128, masking_percentage=0.2, split_set="train"):
 
         # Use cross entropy ignore index as padding label id so that only real label ids contribute to the loss later
     pad_token_label_id = pad_token_ignore_index
     features = convert_examples_to_features(examples, classes_list, max_seq_len, tokenizer,
-                                            is_province=is_province,pad_token_label_id=pad_token_label_id, masking_percentage=masking_percentage)
+                                            is_province=is_province,pad_token_label_id=pad_token_label_id, masking_percentage=masking_percentage, split_set=split_set)
 
     # Convert to Tensors and build dataset
     all_input_ids = torch.tensor([f[0] for f in features], dtype=torch.long)
@@ -175,7 +176,8 @@ def convert_examples_to_features(examples, classes_list, max_seq_len,
                                  pad_token_segment_id=0,
                                  sequence_a_segment_id=0,
                                  mask_padding_with_zero=True,
-                                 masking_percentage=0.2):
+                                 masking_percentage=0.2,
+                                 split_set="train"):
     # Setting based on the current model type
     cls_token = tokenizer.cls_token
     sep_token = tokenizer.sep_token
@@ -243,8 +245,10 @@ def convert_examples_to_features(examples, classes_list, max_seq_len,
         assert len(token_type_ids) == max_seq_len, "Error with token type length {} vs {}".format(len(token_type_ids), max_seq_len)
         assert len(input_ids_w_masking) == max_seq_len, "Error with input with masking length {} vs {}".format(len(input_ids_w_masking), max_seq_len)
 
+
+
         example_idx = 3 if is_province else 2
-        if example[example_idx].strip("\n") in classes_list:
+        if split_set != "test" and (example[example_idx].strip("\n") in classes_list):
             class_label_id = classes_list.index(example[example_idx].strip("\n"))
         else:
             class_label_id = -1
@@ -256,7 +260,7 @@ def convert_examples_to_features(examples, classes_list, max_seq_len,
             logger.info("input_ids_w_masking: %s" % " ".join([str(x) for x in input_ids_w_masking]))
             logger.info("attention_mask: %s" % " ".join([str(x) for x in attention_mask]))
             logger.info("token_type_ids: %s" % " ".join([str(x) for x in token_type_ids]))
-            logger.info("class_label: %s (id = %d)" % (example[2].strip("\n"), class_label_id))
+            # logger.info("class_label: %s (id = %d)" % (example[2].strip("\n"), class_label_id))
 
         features.append((input_ids,
                           attention_mask,

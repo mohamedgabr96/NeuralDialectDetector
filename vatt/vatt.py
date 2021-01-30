@@ -14,6 +14,7 @@ class EnhancedLinear(nn.Module):
             Din: int,
             Dout: int,
     ):
+        super().__init__()
         self.Din = Din
         self.Dout = Dout
     
@@ -64,7 +65,8 @@ class SelfAttention(nn.Module):
                     self.StaticKeys.append(enc.cuda())
             else:
                 raise KeyError(f"Unknown positional key mode: {self.positional_keys_mode}.")
-            shared_key_transform = EnhancedLinear(key_size, config.hidden_size)
+            # shared_key_transform = EnhancedLinear(key_size, config.hidden_size)
+            shared_key_transform = nn.Linear(key_size, config.hidden_size)
             self.key_transforms = nn.ModuleList([
                 shared_key_transform
                 for _ in range(self.nb_layers)
