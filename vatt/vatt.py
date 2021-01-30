@@ -134,7 +134,7 @@ class SelfAttention(nn.Module):
         #^ => [b, Vd] or [b, AdapterD]
         #^ Xs: [layer][batch, dim]
         #^ Q: [batch, dim]
-        Xs = self.dropout(Xs)
+        Xs = [self.dropout(x) for x in Xs]
 
         query = self.Tquery(Q)
         self.debug_shapes(query, name='query')
