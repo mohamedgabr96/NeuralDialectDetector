@@ -14,7 +14,7 @@ from vatt import vatt
 # from transformers.models.bert.modeling_bert import BertModel as TBertModel
 
 class ClassificationHead(nn.Module):
-    def __init__(self, input_dim, num_labels, dropout_rate=0.):
+    def __init__(self, input_dim, num_labels, dropout_rate=0., depth=1):
         super(ClassificationHead, self).__init__()
         # self.head = nn.Sequential(
         #     nn.Dropout(dropout_rate),
@@ -24,7 +24,17 @@ class ClassificationHead(nn.Module):
         #     nn.Linear(input_dim // 2, num_labels)
         # )
         self.dropout = nn.Dropout(dropout_rate)
-        self.linear = nn.Linear(input_dim, num_labels)  # Simple Head for Now
+        self.depth = depth
+        assert depth in (1, 2)
+        if depth == 1:
+            self.linear = nn.Linear(input_dim, num_labels)  # Simple Head for Now
+        else:
+            self.linear = nn.Sequential(
+                nn.Linear(input_dim, input_dim // 2),
+                nn.ReLU(),
+                self.dropout,
+                nn.Linear(input_dim // 2, num_labels)
+            )
 
     def forward(self, x):
         # return self.head(x)
@@ -77,12 +87,12 @@ class ArabicDialectBERT(BertPreTrainedModel):
             token_type_ids=token_type_ids,
             output_hidden_states=True,
         )  # sequence_output, pooled_output, (hidden_states), (attentions)
-        sequence_output = outputs[0]  # Not needed for now
+        # sequence_output = outputs[0]  # Not needed for now
         pooled_output = outputs[1]  # [CLS]
         
         if self.args['use_vert_att']:
-            iatt = [layer[:,0,:] for layer in outputs[2]]
-            pooled_output = self.attend_vertical(Xs=iatt, Q=pooled_output)
+            layer_cls = [layer[:,0,:] for layer in outputs[2]]
+            pooled_output = self.attend_vertical(Xs=layer_cls, Q=pooled_output)
             # pooled_output = self.bert.pooler(new_feats)
 
         logits = self.classif_head(pooled_output)
