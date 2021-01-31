@@ -24,7 +24,7 @@ class InvSqrtLR(LambdaLR):
             temperature=1,
     ):
         assert max_factor == 1
-        self.num_warmup = num_warmup // mini_epoch_size
+        self.num_warmup = num_warmup
         self.max_factor = max_factor
         self.min_factor = min_factor
         self.mini_epoch_sz = mini_epoch_size
@@ -34,13 +34,11 @@ class InvSqrtLR(LambdaLR):
         logger.info(f'InvSqrtLR dict: {self.__dict__}')
 
     def lr_lambda(self, iteration: int) -> float:
-        iteration = iteration // self.mini_epoch_sz
-        
         if iteration < self.num_warmup:
             step = (self.max_factor - self.min_factor) / float(self.num_warmup)
             fac  = self.min_factor + (1 + iteration) * step
         else:
-            it = 1 + iteration - self.num_warmup
+            it = 1 + (iteration - self.num_warmup) // self.mini_epoch_sz
             fac = self.max_factor / max(1.0, np.sqrt(it / self.temp))
             fac = max(fac, self.min_factor)
         neptune.log_metric('InvSqrtLR_factor', x=global_step, y=fac)
