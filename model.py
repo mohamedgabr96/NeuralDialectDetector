@@ -92,6 +92,7 @@ class ArabicDialectBERT(BertPreTrainedModel):
         
         if self.args['use_vert_att']:
             layer_cls = [layer[:,0,:] for layer in outputs[2]]
+            # pooled_output = torch.stack(layer_cls, dim=0).mean(0)
             pooled_output = self.attend_vertical(Xs=layer_cls, Q=pooled_output)
             # pooled_output = self.bert.pooler(new_feats)
 

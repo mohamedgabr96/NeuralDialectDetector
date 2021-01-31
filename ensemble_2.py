@@ -18,25 +18,27 @@ def read_from_file(file_in):
     return df
 
 runs = [
-    "60_InvSqrt", 
-    "60_VAT_1",
-    "80_InvSqrt", 
-    "90_InvSqrt", 
-    "90_InvSqrt_VAT",
+    # "60_InvSqrt", 
+    # "60_VAT_1",
+    # "80_InvSqrt", 
+    # "90_InvSqrt", 
+    # "90_InvSqrt_VAT",
     "Adapters_VAtt",
-    "FT_VAtt", 
-    "90_VAT_1", 
-    "FT_90",
-    "FT_90_2", 
-    "90_Head_2", 
-    "100_InvSqrt", 
-    "110_InvSqrt", 
-    "120_InvSqrt", 
+    "Adapters_VAtt_2",
+    # "FT_VAtt", 
+    # "90_VAT_1", 
+    # "FT_90",
+    # "FT_90_2", 
+    # "90_Head_2", 
+    # "100_InvSqrt", 
+    # "110_InvSqrt", 
+    # "120_InvSqrt", 
 ] # subtask 1.2
 
-run_id = 14
+run_id = 15
 subtask = "DA_Country"
-verbose = False 
+verbose = True
+ 
 
 dirname = "/home/bkhmsi/Documents/Projects/NeuralDialectDetector/checkpoints_marbert"
 files = [f"{dirname}/MARBERT_{subtask}_{i}/predictions_dev.tsv" for i in runs]
