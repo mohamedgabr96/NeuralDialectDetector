@@ -19,10 +19,11 @@ global_step = 0
 class InvSqrtLR(LambdaLR):
     def __init__(
             self, optim,
-            num_warmup: int, max_factor: float = 10, min_factor: float = 0.01,
+            num_warmup: int, max_factor: float = 1, min_factor: float = 1e-6,
             mini_epoch_size=1,
             temperature=1,
     ):
+        assert max_factor == 1
         self.num_warmup = num_warmup // mini_epoch_size
         self.max_factor = max_factor
         self.min_factor = min_factor
@@ -37,7 +38,7 @@ class InvSqrtLR(LambdaLR):
         
         if iteration < self.num_warmup:
             step = (self.max_factor - self.min_factor) / float(self.num_warmup)
-            fac  = self.min_factor + iteration * step
+            fac  = self.min_factor + (1 + iteration) * step
         else:
             it = 1 + iteration - self.num_warmup
             fac = self.max_factor / max(1.0, np.sqrt(it / self.temp))
