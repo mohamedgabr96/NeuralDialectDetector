@@ -4,8 +4,18 @@ from typing import (
 import torch as T
 import math
 from torch import nn
+from torch.nn import functional as F
 from transformers.models.bert.modeling_bert import BertSelfOutput, BertOutput, BertAttention, BertLayer
 from AdaptersComponents.AdapterModules import AdapterModule
+
+def split_dim(x: T.Tensor, n: int, *, dim: int=-1):
+    assert -x.ndim <= dim < x.ndim
+    assert x.shape[dim] % n == 0
+    if dim < 0:
+        dim = dim + x.ndim
+    sh = x.shape[:dim] + (x.shape[dim] // n, n) + x.shape[dim+1:]
+    z = x.view(sh)
+    return z
 
 class EnhancedLinear(nn.Module):
     '''"Stop thinking with your head. -- SMerity'''
@@ -137,22 +147,18 @@ class SelfAttention(nn.Module):
         Xs = [self.dropout(x) for x in Xs]
 
         query = self.Tquery(Q)
-        self.debug_shapes(query, name='query')
         #^ query: [batch, Qdim]
         keys = self.Tkeys(Xs)
-        self.debug_shapes(keys, name='keys')
         #^ keys: [batch, layer, Qdim]
         values = self.Tvalues(Xs)
-        self.debug_shapes(values, name='values')
         #^ values: [batch, Vdim, layer]
-        residual = Xs[-1]
-        self.debug_shapes(residual, name='residual')
+        # residual = Xs[-1]
         #^ residual: [batch, Vdim]
-    
-        values += residual.unsqueeze(2)
+
+        # values += residual.unsqueeze(2)
         #^ values: [batch, Vdim, layer]
 
-        values = self.dropout(values)
+        # values = self.dropout(values)
         values = self.values_lnorm(values.transpose(-1, -2)).transpose(-1, -2)
         #^ => [batch, layer, Vdim] => [batch, norm(Vdim), layer]
 
@@ -161,18 +167,18 @@ class SelfAttention(nn.Module):
         # value_layer = self.value_transforms(value)
 
         attention_logits = T.matmul(query.unsqueeze(1), keys.transpose(-1, -2)).squeeze(dim=1)
-        self.debug_shapes(attention_logits, name='attention_logits')
         #^ [b, 1, Qd] matmul [b, (Qd, L)] => [b, L]
 
         attention_logits = self.dropout(attention_logits)
 
-        attention_probs = nn.Softmax(dim=-1)(attention_logits / math.sqrt(self.hidden_size))
+        attention_probs = F.softmax(attention_logits / math.sqrt(self.hidden_size), dim=-1)
         # attention_probs = nn.Softmax(dim=-1)(attention_logits / math.sqrt(self.hidden_size) / self.T)
         # self.T = max(self.T - self.reduction, 1.0)
 
         context_layer = T.matmul(attention_probs.unsqueeze(1), values.transpose(-1, -2)).squeeze(dim=1)
-        self.debug_shapes(context_layer, name='context_layer')
         #^ [b, 1, L] matmul [b, (L, Vd)] => [b, Vd]
+
+        # context_layer += self.value_transforms[-1](residual)
 
         if self.use_adapter: 
             context_layer = self.adapter(context_layer)
