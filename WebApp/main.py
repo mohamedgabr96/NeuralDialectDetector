@@ -49,7 +49,7 @@ def my_form():
 def my_form_post():
     input_text = request.form['text']
     logits_softmaxed = return_logits(input_text)
-    return render_template('second_page.html', found_class=str(classes_list[np.argmax(logits_softmaxed)]))
+    return render_template('second_page.html', sentence_in=input_text, predict_country=str(classes_list[np.argmax(logits_softmaxed)]))
 
 
 # APIs
