@@ -179,7 +179,8 @@ class SelfAttention(nn.Module):
         context_layer = T.matmul(attention_probs.unsqueeze(1), values.transpose(-1, -2)).squeeze(dim=1)
         #^ [b, 1, L] matmul [b, (L, Vd)] => [b, Vd]
 
-        context_layer += self.value_transforms[-1](residual)
+        # context_layer += self.value_transforms[-1](residual)
+        context_layer += residual
 
         if self.use_adapter: 
             context_layer = self.adapter(context_layer)
