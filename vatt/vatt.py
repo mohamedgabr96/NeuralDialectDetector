@@ -153,10 +153,10 @@ class SelfAttention(nn.Module):
         #^ keys: [batch, layer, Qdim]
         values = self.Tvalues(Xs)
         #^ values: [batch, Vdim, layer]
-        # residual = Xs[-1]
+        residual = Xs[-1]
         #^ residual: [batch, Vdim]
 
-        # values += residual.unsqueeze(2)
+        values += residual.unsqueeze(2)
         #^ values: [batch, Vdim, layer]
 
         # values = self.dropout(values)
@@ -179,7 +179,7 @@ class SelfAttention(nn.Module):
         context_layer = T.matmul(attention_probs.unsqueeze(1), values.transpose(-1, -2)).squeeze(dim=1)
         #^ [b, 1, L] matmul [b, (L, Vd)] => [b, Vd]
 
-        # context_layer += self.value_transforms[-1](residual)
+        context_layer += self.value_transforms[-1](residual)
 
         if self.use_adapter: 
             context_layer = self.adapter(context_layer)

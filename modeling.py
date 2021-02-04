@@ -23,7 +23,7 @@ class InvSqrtLR(LambdaLR):
             mini_epoch_size=1,
             temperature=1,
     ):
-        assert max_factor == 1
+        # assert max_factor == 1
         self.num_warmup = num_warmup
         self.max_factor = max_factor
         self.min_factor = min_factor
@@ -109,14 +109,16 @@ class Trainer():
                 }
             ], lr=self.configs["initial_learning_rate"], eps=self.configs["adam_epsilon"])
         mini_epoch_size = self.configs.get('lr-mini-epoch-size', 1)
-        scheduler = InvSqrtLR(optimizer,
-            num_warmup=self.configs["warmup_steps"] // mini_epoch_size,
-            mini_epoch_size=mini_epoch_size,
-            min_factor=self.configs.get('inv-sqrt-lr-min-factor', 0.1),
-            max_factor=self.configs.get('inv-sqrt-lr-max-factor', 2),
-            temperature=self.configs.get('inv-sqrt-lr-temperature', 1)
-        )
-        # scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.configs["warmup_steps"], num_training_steps=total_steps)
+        if self.configs["invsqrt-lr-scheduler"]:
+            scheduler = InvSqrtLR(optimizer,
+                num_warmup=self.configs["warmup_steps"],
+                mini_epoch_size=mini_epoch_size,
+                min_factor=self.configs.get('inv-sqrt-lr-min-factor', 0.1),
+                max_factor=self.configs.get('inv-sqrt-lr-max-factor', 2),
+                temperature=self.configs.get('inv-sqrt-lr-temperature', 1)
+            )
+        else:
+            scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.configs["warmup_steps"], num_training_steps=total_steps)
         # scheduler = CyclicLR(optimizer, base_lr=5.e-6, max_lr=5.e-5, step_size_up=657, cycle_momentum=False)
 
         # model.zero_grad()
