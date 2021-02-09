@@ -1,6 +1,6 @@
 # NeuralDialectDetector
 
-We achieve state of the art results on all of the 2021 shared NADI tasks by ensembling a set of  models built on top MARBERT (https://arxiv.org/abs/2101.01785) with different architectural variancs. 
+We achieve state of the art results on all of the 2021 shared NADI tasks by ensembling a set of  models built on top MARBERT (https://arxiv.org/abs/2101.01785) with different architectural variants. 
 
 # Table of Results
 
