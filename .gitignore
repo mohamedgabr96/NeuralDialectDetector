@@ -2,7 +2,7 @@ NADI2021_DEV.1.0
 CairoSquad*
 config_linux.yaml
 checkpoints*
-.vscode 
+.vscode
 play/
 
 # Byte-compiled / optimized / DLL files
