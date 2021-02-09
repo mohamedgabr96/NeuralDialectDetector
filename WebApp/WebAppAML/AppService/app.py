@@ -5,7 +5,7 @@ import requests
 app = Flask(__name__)
 
 
-country_predict_API = "http://4d66f5a0-c656-471d-9b31-3e3c9de8cdc3.eastus.azurecontainer.io/score"
+country_predict_API = "http://b4e3314b-aea0-40fd-9c63-83b1242402e1.eastus.azurecontainer.io/score"
 
 # Functions for the WebApp
 @app.route('/', methods=["GET"])
