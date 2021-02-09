@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../../../favicon.ico">
+
+    <title>The Neural Dialect Detector</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href= "{{ url_for('static',filename='styles/editor.css') }}" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href= "{{ url_for('static',filename='styles/narrow-jumbotron.css') }}" rel="stylesheet">
+    
+  </head>
+
+  <body>
+
+    <div class="container">
+      <div class="header clearfix">
+        <nav>
+          <ul class="nav nav-pills float-right">
+            <li class="nav-item" style="line-height: 24px; width: 89px; height: 40px;">
+              <a class="nav-link active" href="#" style="float: right; position: relative;">Home <span class="sr-only">(current)</span></a>
+            </li>
+             <li class="nav-item" style="line-height: 24px; width: 89px; height: 40px;">
+              <a class="nav-link" href="#" style="float: right; position: relative;">Paper</a>
+            </li>
+             <li class="nav-item" style="line-height: 24px; width: 189px; height: 40px;">
+              <a class="nav-link" href="#" style="float: right; position: relative;">Github Repo</a>
+            </li>
+             <li class="nav-item" style="line-height: 24px; width: 189px; height: 40px;">
+              <a class="nav-link" href="#" style="float: right; position: relative;">About the BNG Lab</a>
+            </li>
+            <li class="nav-item" style="line-height: 24px; width: 89px; height: 40px;">
+              <a class="nav-link" href="#" style="float: right; position: relative;">Contact</a>
+            </li>
+          </ul>
+        </nav>
+        <h3 class="text-muted">Neural Dialect Detector</h3>
+      </div>
+
+      
+
+      <div class="row marketing">
+        <form method="POST">
+        <div class="col-lg-6"><div class="form-group" style=""><label>Enter the sentence you want to get its dialect</label><input type="text" name="text" class="form-control" style="width: 447px; float: none;"></div>
+          
+
+          
+          
+        <input type="submit" value="Predict Dialect" class="btn btn-primary" style="text-decoration-line: none; float: left; text-align: right;"></div>
+        </form>
+        
+      </div>
+
+      <footer class="footer">
+        <p>© Badr Al-Khamissi, Mohamed Gabr, Muhammad Al-Nokrashy, Khaled Essam 2021</p>
+      </footer>
+
+    </div> <!-- /container -->
+  
+
+</body>
+</html>

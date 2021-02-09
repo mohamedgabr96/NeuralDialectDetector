@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from flask import Flask, request, render_template
 import sys
-sys.path.append("../")
+sys.path.append("../../")
 import model as model_classes
 from transformers import AutoTokenizer, AutoModel, AutoConfig
 from general_utils import read_yaml_file 
@@ -12,12 +12,14 @@ app = Flask(__name__)
 
 # Initializing needed classes
 global classes_list, tokenizer, model, configs
-config_file_path = "../config.yaml"
-data_classes_path = "../dataset_dummy"
+config_file_path = "../../config.yaml"
+data_classes_path = "../../dataset_dummy"
 classes_list = parse_classes_list(data_classes_path)
+classes_list.sort()
 configs = read_yaml_file(config_file_path)
 configs["num_labels"] = len(classes_list)
 configs["device"] = "cpu"
+configs["use_vert_att"] = "true"
 model_name_path = configs["model_name_path"]
 tokenizer = AutoTokenizer.from_pretrained(model_name_path)
 model_config = AutoConfig.from_pretrained(model_name_path)
