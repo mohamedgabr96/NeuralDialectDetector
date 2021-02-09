@@ -1,26 +1,15 @@
 # NeuralDialectDetector
 
-Working on the 2021 Shared NADI Task, specifically on country-level dialect classification.
+We achieve state of the art results on all of the 2021 shared NADI tasks by ensembling a set of  models built on top MARBERT () with different architectural variancts. 
 
-## Plans:
-    
-
-I- Code To-Do's:
-
-    Add Adapters
-
-    Add MLM training and curriculum learning
-
-    Add support for BOHP and Neptune
-
-II- Ideas:
-
-    idea 1:
-
-        Train one adapter per dialect using MLM+Curriculum Learning
-
-        Fuse all dialects using adapter fusion and tune fusion layer on the classification task.
+# Table of Results
 
 
-Baseline Scores Table:
-TBD
+
+# Link to Paper
+
+
+
+# Website Demo
+
+A demo of the model's predictions is available on a WebApp: https://neuraldetector1.azurewebsites.net
