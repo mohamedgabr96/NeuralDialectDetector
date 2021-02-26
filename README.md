@@ -20,4 +20,4 @@ We achieve state of the art results on all of the 2021 shared NADI tasks by ense
 
 # Website Demo
 
-A demo of the model's predictions is available on a WebApp: https://neuraldetector1.azurewebsites.net
+A demo of the model's predictions is available on a WebApp: https://arabicdialectdetector.azurewebsites.net
