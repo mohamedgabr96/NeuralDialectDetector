@@ -32,6 +32,7 @@ class EnhancedLinear(nn.Module):
         self.linear = nn.Linear(self.Din, self.Dout * 2)
 
     def forward(self, X: T.Tensor) -> T.Tensor:
+        X = X.cuda()
         mag, sgn = self.linear(X).chunk(2, dim=-1)
         Z = self.static * mag.sigmoid() * sgn.tanh()
         return Z

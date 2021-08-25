@@ -7,7 +7,7 @@ import torch
 from tqdm import tqdm, trange
 import numpy as np
 import os
-import neptune
+# import neptune
 import random 
 import model as model_classes
 from torch.optim.lr_scheduler import CyclicLR, LambdaLR
@@ -23,7 +23,7 @@ class InvSqrtLR(LambdaLR):
             mini_epoch_size=1,
             temperature=1,
     ):
-        assert max_factor == 1
+        # assert max_factor == 1
         self.num_warmup = num_warmup
         self.max_factor = max_factor
         self.min_factor = min_factor
@@ -41,7 +41,7 @@ class InvSqrtLR(LambdaLR):
             it = 1 + (iteration - self.num_warmup) // self.mini_epoch_sz
             fac = self.max_factor / max(1.0, np.sqrt(it / self.temp))
             fac = max(fac, self.min_factor)
-        neptune.log_metric('InvSqrtLR_factor', x=global_step, y=fac)
+        # neptune.log_metric('InvSqrtLR_factor', x=global_step, y=fac)
         return fac
 
 class Trainer():
