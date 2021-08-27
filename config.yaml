@@ -30,7 +30,7 @@ model_name_path: UBC-NLP/MARBERT
 neptune_experiment_name: MARBERT_DA_Country_100
 neptuneaiAPI: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsImFwaV91cmwiOiJodHRwczovL3VpLm5lcHR1bmUuYWkiLCJhcGlfa2V5IjoiYzNlOTI4MDUtMWEwMC00N2U3LWEzYTAtZjAyMzA2YzE1YjI3In0=
 no_total_adapters: 21
-num_epochs: 5
+num_epochs: 3
 one_class_filtration: null
 path_to_data: NADI2021_DEV.1.0/Subtask_1.2+2.2_DA
 run_title: MARBERT_DA_Country_100
