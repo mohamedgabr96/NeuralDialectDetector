@@ -162,6 +162,13 @@ class Trainer():
 
                 if global_step % self.configs["improvement_check_freq"] == 0:
                     curr_dev_f1, dev_accuracy, curr_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
+                    
+                    logger.info(f"Logging improvment check at global step: [{global_step}] \n F1: [{curr_dev_f1}] - Accuracy: [{dev_accuracy}] - Loss: [{curr_dev_loss}]")
+                    logger.info(f"Learning rate is: {optimizer.param_groups[0]['lr']}")
+
+                    print(f"Logging improvment check at global step: [{global_step}] \n F1: [{curr_dev_f1}] - Accuracy: [{dev_accuracy}] - Loss: [{curr_dev_loss}]")
+                    print(f"Learning rate is: {optimizer.param_groups[0]['lr']}")
+
                     if self.configs["use_neptune"]:
                         neptune.log_metric('dev_loss', x=global_step, y=curr_dev_loss)
                         neptune.log_metric('dev_accuracy', x=global_step, y=dev_accuracy)
@@ -191,7 +198,7 @@ class Trainer():
         # Final Evaluation Loop
         if self.configs["num_epochs"] > 0:
             final_dev_f1, final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"])
-            final_test_f1, final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], isTest=True)
+            final_test_f1, final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], isTest=False)
         else:
             final_dev_accuracy = 0
 
@@ -204,7 +211,7 @@ class Trainer():
 
         if self.configs["num_epochs"] > 0:
             final_dev_f1, final_dev_accuracy, final_dev_loss = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"], isTest=isTest_flag_for_dev_train)
-            final_test_f1, final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], isTest=True)
+            final_test_f1, final_test_accuracy, final_test_loss = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], isTest=False)
             
             logger.info(f"[YUSUF] Finished Training #### Final test accuracy is  --> {final_test_accuracy} ### Final test F1 is ---> {final_test_f1} ### Final test loss is --> {final_test_loss}")
             
@@ -268,7 +275,7 @@ class Trainer():
         final_dev_f1, final_dev_accuracy, final_dev_loss, y_true_dev, y_pred_dev, sentence_id_dev, logits_list_dev = evaluate_predictions(model, dev_loader, self.configs["model_class"], device=self.configs["device"], return_pred_lists=True, isTest=isTest_flag_for_dev_train)
         dump_predictions(sentence_id_dev, logits_list_dev, y_pred_dev, y_true_dev, os.path.join(model_path, "predictions_dev.tsv"))
         
-        final_test_f1, final_test_accuracy, final_test_loss, y_true_test, y_pred_test, sentence_id_test, logits_list_test = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], return_pred_lists=True, isTest=True)
+        final_test_f1, final_test_accuracy, final_test_loss, y_true_test, y_pred_test, sentence_id_test, logits_list_test = evaluate_predictions(model, test_loader, self.configs["model_class"], device=self.configs["device"], return_pred_lists=True, isTest=False)
         dump_predictions(sentence_id_test, logits_list_test, y_pred_test, y_true_test, os.path.join(model_path, "predictions_test.tsv"))
 
         dict_of_results["DEV"] = {"F1": final_dev_f1, "Accuracy": final_dev_accuracy, "Loss": final_dev_loss} 
