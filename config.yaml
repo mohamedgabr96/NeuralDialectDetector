@@ -1,6 +1,6 @@
 adam_epsilon: 1.0e-08
 adapter_type: plain_adapter
-batch_size: 32
+batch_size: 2
 bottleneck_dim: 384
 checkpoint_on_improvement: true
 checkpointing_freq: 1
@@ -26,7 +26,7 @@ masking_percentage: 0
 max_ex_per_class: null
 max_sequence_length: 90
 model_class: ArabicDialectBERT
-model_name_path: UBC-NLP/MARBERT
+model_name_path: saved/MARBERT
 neptune_experiment_name: MARBERT_DA_Country_100
 neptuneaiAPI: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsImFwaV91cmwiOiJodHRwczovL3VpLm5lcHR1bmUuYWkiLCJhcGlfa2V5IjoiYzNlOTI4MDUtMWEwMC00N2U3LWEzYTAtZjAyMzA2YzE1YjI3In0=
 no_total_adapters: 21

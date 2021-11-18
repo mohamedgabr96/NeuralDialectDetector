@@ -67,7 +67,7 @@ def random_mask_tokens(input_ids, atttention_mask, masking_percentage, mask_id, 
     return input_ids
 
 
-def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu", return_pred_lists=False, isTest=False):
+def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu", return_pred_lists=False, isTest=False, split=""):
     model.eval()
     no_batches = tqdm(evaluation_loader, desc="Batch Evaluation Loop")
     final_eval_loss, correct = 0, 0
@@ -76,6 +76,7 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
     logits_list = []
     y_true = []
     y_pred = []
+    confusion_matrix = np.zeros((21, 21))
     for batch in no_batches:
         batch = [x.to(device) for x in batch]
         label_ids_in = batch[3] if not isTest else None
@@ -89,6 +90,7 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
             label_ids = logits.argmax(axis=1)
             g_truths.extend(batch[3].detach().cpu().numpy())
             preds.extend(label_ids.detach().cpu().numpy())
+            confusion_matrix[batch[3].item(), label_ids.item()] += 1
             list_of_sentence_ids.extend(batch[5].detach().cpu().numpy())
             correct += (label_ids == batch[3]).sum()
             num_samples += label_ids.size(0)
@@ -102,7 +104,10 @@ def evaluate_predictions(model, evaluation_loader, model_class_name, device="cpu
     else:
         f1 = 0 
         accuracy = 0
-        
+    
+    print(f"Classes Confusion Matrix [{split}]=>")
+    print(confusion_matrix)
+
     eval_loss = final_eval_loss / total_no_steps
 
     if return_pred_lists:
