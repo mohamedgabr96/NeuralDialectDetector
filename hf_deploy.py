@@ -1,0 +1,12 @@
+from HuggingFace_deployment.modeling import NADIMARBERTModelForSequenceClassification
+from HuggingFace_deployment.config import NADIMARBERTConfig
+import os
+
+model_path = "/Users/mohamedgabr/Downloads/MARBERT_DA_Country_Adapters_VAtt"
+
+NADIMARBERTConfig.register_for_auto_class()
+NADIMARBERTModelForSequenceClassification.register_for_auto_class("AutoModelForSequenceClassification")
+
+nadimarbert = NADIMARBERTModelForSequenceClassification.from_pretrained(model_path)
+
+nadimarbert.push_to_hub("")
